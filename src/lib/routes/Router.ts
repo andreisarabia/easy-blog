@@ -1,4 +1,5 @@
 import { promises as fs, read } from 'fs';
+import path from 'path';
 import KoaRouter from 'koa-router';
 import ejs from 'ejs';
 import { file_path_from_base, read_dir_recursively } from '../../util/fns';
@@ -6,7 +7,7 @@ import { file_path_from_base, read_dir_recursively } from '../../util/fns';
 export default class Router {
   protected instance: KoaRouter;
   private pathMap: Map<string, string[]> = null;
-  private templates: Map<string, Promise<string>> = new Map();
+  private templates: Map<string, Promise<string>> = null;
   private templatePath: string;
 
   constructor(prefix: string, templatePath?: string) {
@@ -14,12 +15,20 @@ export default class Router {
     this.templatePath = `templates/${templatePath}`;
   }
 
-  protected async setup() {
+  protected async setup_templates() {
+    if (this.templates) return this.templates;
+
+    this.templates = new Map();
+
     for await (const filePath of read_dir_recursively(this.templatePath)) {
-      const fileBasePath = file_path_from_base(filePath, this.templatePath);
+      const { dir } = path.parse(filePath);
+      const newBasePath = dir.slice(dir.indexOf(this.templatePath));
+      const fileName = path.basename(filePath);
+      const templateKey = `${newBasePath}/${fileName}`;
+
       this.templates.set(
-        `${this.templatePath}/${fileBasePath}`,
-        Promise.resolve((await fs.readFile(filePath)).toString())
+        templateKey,
+        fs.readFile(filePath, { encoding: 'utf-8' })
       );
     }
   }
@@ -29,28 +38,32 @@ export default class Router {
   }
 
   public get allPaths(): Map<string, string[]> {
-    this.pathMap =
-      this.pathMap ||
-      this.instance.stack.reduce((paths, { path, methods }) => {
-        if (path.includes('.*')) return paths;
-        if (paths.has(path)) {
-          paths.set(path, [...this.pathMap.get(path), ...methods]);
-        } else {
-          paths.set(path, [...methods]);
-        }
-        return paths;
-      }, new Map());
+    if (this.pathMap) return this.pathMap;
+
+    const paths = this.instance.stack.reduce(
+      (paths, { path, methods }) =>
+        path.includes('.*') ? paths : paths.concat([[path, methods]]),
+      []
+    );
+
+    this.pathMap = new Map(paths);
 
     return this.pathMap;
   }
 
   protected async render(
     templateName: string,
-    data?: ejs.Options
+    data: object = {}
   ): Promise<string> {
-    const templates = await this.templates.get(
-      `${this.templatePath}/${templateName}`
-    );
-    return ejs.compile(templates, data)();
+    const [universalTemplate, requestedTemplate] = await Promise.all([
+      this.templates.get(`${this.templatePath}/template.ejs`),
+      this.templates.get(`${this.templatePath}/${templateName}`)
+    ]);
+    const renderData = {
+      template: requestedTemplate,
+      ...data
+    };
+
+    return ejs.render(universalTemplate, { ...renderData }, { async: true });
   }
 }
