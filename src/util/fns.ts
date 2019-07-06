@@ -9,6 +9,14 @@ const file_path_from_base = (filePath: string, cutoff: string): string =>
     filePath.length
   );
 
+const is_url = (url: any) => {
+  try {
+    return Boolean(new URL(url));
+  } catch (error) {
+    return false;
+  }
+};
+
 async function* read_dir_recursively(
   dir: string
 ): AsyncIterableIterator<string> {
@@ -23,4 +31,4 @@ async function* read_dir_recursively(
   }
 }
 
-export { array_unique, file_path_from_base, read_dir_recursively };
+export { array_unique, is_url, file_path_from_base, read_dir_recursively };

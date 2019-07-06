@@ -1,0 +1,31 @@
+<section id="admin-posts">
+  <div id="posts-header">
+    <div class="post-header">
+      <h2>Posts</h2>
+    </div>
+  </div>
+  <div id="posts-summary">
+    <div id="posts-columns">
+      <h3>ID</h3>
+      <h3>Author</h3>
+      <h3>Content</h3>
+      <h3>Date</h3>
+    </div>
+    <div id="posts">
+      <% posts.forEach(post => { %>
+      <div class="post">
+        <h3><%= post.id %></h3>
+        <h3><%= post.name %></h3>
+        <h3><%= post.snippet %></h3>
+        <h3><%= post.date %></h3>
+      </div>
+      <% }) %>
+    </div>
+  </div>
+  <style>
+    div#posts-columns, div.post {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+    }
+  </style>
+</section>

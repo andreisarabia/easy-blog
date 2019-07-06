@@ -4,11 +4,64 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta http-equiv="X-UA-Compatible" content="ie=edge" />
-    <title>Document</title>
+    <title><%= title %></title>
   </head>
   <body>
-    <header></header>
+    <header>
+      <section id="navbar">
+        <nav>
+          <ul>
+            <li class="crumbs">
+              <a href="home">Home</a>
+            </li>
+            <li class="crumbs">
+              <a href="posts">Posts</a>
+            </li>
+            <li class="crumbs">
+              <a href="media">Media</a>
+            </li>
+            <li class="crumbs">
+              <a href="stats">Stats</a>
+            </li>
+            <li class="crumbs">
+              <a href="settings">Settings</a>
+            </li>
+            <li class="crumbs">
+              <button id="reset-cache">Purge Cache</button>
+            </li>
+          </ul>
+        </nav>
+      </section>
+    </header>
     <main><%- template %></main>
     <footer></footer>
+    <style>
+      body {
+        margin: 0rem;
+        padding: 1rem;
+      }
+      body a {
+        text-decoration: none;
+        color: inherit;
+      }
+      nav > ul {
+        display: flex;
+        justify-content: space-evenly;
+        list-style: none;
+      }
+      main {
+        width: 80vw;
+        margin: 3rem auto;
+      }
+    </style>
+    <script>
+      const rootEl = document.body;
+      rootEl.querySelector('nav button#reset-cache').onclick = async e => {
+        const res = await fetch('reset-template-cache', {
+          method: 'POST'
+        });
+        console.log(await res.json());
+      };
+    </script>
   </body>
 </html>

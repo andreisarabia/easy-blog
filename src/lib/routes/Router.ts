@@ -1,36 +1,40 @@
 import { promises as fs, read } from 'fs';
 import path from 'path';
+import Koa from 'koa';
 import KoaRouter from 'koa-router';
 import ejs from 'ejs';
 import { file_path_from_base, read_dir_recursively } from '../../util/fns';
 
 export default class Router {
   protected instance: KoaRouter;
-  private pathMap: Map<string, string[]> = null;
-  private templates: Map<string, Promise<string>> = null;
+  private pathMap: Map<string, string[]> = new Map();
+  private cachedTemplates: Map<string, Promise<string>>; // we don't initialize caching templates, so any router child can be API-only
   private templatePath: string;
 
   constructor(prefix: string, templatePath?: string) {
-    this.instance = new KoaRouter({ prefix });
-    this.templatePath = `templates/${templatePath}`;
+    this.instance = new KoaRouter({ prefix: `${prefix}/` });
+    if (templatePath) {
+      this.templatePath = `templates/${templatePath}`;
+      this.setup_templates();
+    }
   }
 
   protected async setup_templates() {
-    if (this.templates) return this.templates;
-
-    this.templates = new Map();
+    const start = Date.now();
+    this.cachedTemplates = this.cachedTemplates || new Map();
 
     for await (const filePath of read_dir_recursively(this.templatePath)) {
       const { dir } = path.parse(filePath);
       const newBasePath = dir.slice(dir.indexOf(this.templatePath));
-      const fileName = path.basename(filePath);
-      const templateKey = `${newBasePath}/${fileName}`;
-
-      this.templates.set(
-        templateKey,
+      this.cachedTemplates.set(
+        `${newBasePath}/${path.basename(filePath)}`,
         fs.readFile(filePath, { encoding: 'utf-8' })
       );
     }
+
+    console.log(
+      `${Date.now() - start}ms to load templates in ${this.templatePath}`
+    );
   }
 
   public get middleware(): KoaRouter {
@@ -38,32 +42,46 @@ export default class Router {
   }
 
   public get allPaths(): Map<string, string[]> {
-    if (this.pathMap) return this.pathMap;
+    if (this.pathMap.size > 0) return this.pathMap;
 
-    const paths = this.instance.stack.reduce(
-      (paths, { path, methods }) =>
-        path.includes('.*') ? paths : paths.concat([[path, methods]]),
-      []
-    );
-
-    this.pathMap = new Map(paths);
+    for (const { path, methods } of this.instance.stack) {
+      if (path.includes('.*')) continue;
+      if (this.pathMap.has(path)) {
+        const savedPaths = this.pathMap.get(path);
+        this.pathMap.set(path, [...savedPaths, ...methods]);
+      } else {
+        this.pathMap.set(path, methods);
+      }
+    }
 
     return this.pathMap;
+  }
+
+  private async render_template(
+    templateName: string,
+    data: object | any
+  ): Promise<string> {
+    const [universalTemplate, requestedTemplate] = await Promise.all([
+      this.cachedTemplates.get(`${this.templatePath}/template.ejs`),
+      this.cachedTemplates.get(`${this.templatePath}/${templateName}`)
+    ]);
+    const renderedRequestedTemplate = await ejs.render(
+      requestedTemplate,
+      { ...data },
+      { async: true }
+    );
+
+    return ejs.render(
+      universalTemplate,
+      { template: renderedRequestedTemplate, title: data.title },
+      { async: true }
+    );
   }
 
   protected async render(
     templateName: string,
     data: object = {}
   ): Promise<string> {
-    const [universalTemplate, requestedTemplate] = await Promise.all([
-      this.templates.get(`${this.templatePath}/template.ejs`),
-      this.templates.get(`${this.templatePath}/${templateName}`)
-    ]);
-    const renderData = {
-      template: requestedTemplate,
-      ...data
-    };
-
-    return ejs.render(universalTemplate, { ...renderData }, { async: true });
+    return this.render_template(templateName, data);
   }
 }
