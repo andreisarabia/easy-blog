@@ -12,7 +12,7 @@ const contentSecurityPolicy = {
 
 const get_csp_header = () => {
   let cspString: string = null;
-  return () => {
+  return (): string => {
     if (cspString) return cspString;
     const cspRules: string[] = Object.entries(contentSecurityPolicy).map(
       ([src, directives]) => {

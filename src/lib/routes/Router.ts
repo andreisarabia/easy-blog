@@ -57,31 +57,21 @@ export default class Router {
     return this.pathMap;
   }
 
-  private async render_template(
+  protected async render(
     templateName: string,
-    data: object | any
+    data?: object | any
   ): Promise<string> {
     const [universalTemplate, requestedTemplate] = await Promise.all([
       this.cachedTemplates.get(`${this.templatePath}/template.ejs`),
       this.cachedTemplates.get(`${this.templatePath}/${templateName}`)
     ]);
-    const renderedRequestedTemplate = await ejs.render(
+    const { title = 'Easy Blog', ...restOfData } = data || {};
+    const template = await ejs.render(
       requestedTemplate,
-      { ...data },
+      { ...restOfData },
       { async: true }
     );
 
-    return ejs.render(
-      universalTemplate,
-      { template: renderedRequestedTemplate, title: data.title },
-      { async: true }
-    );
-  }
-
-  protected async render(
-    templateName: string,
-    data: object = {}
-  ): Promise<string> {
-    return this.render_template(templateName, data);
+    return ejs.render(universalTemplate, { template, title }, { async: true });
   }
 }

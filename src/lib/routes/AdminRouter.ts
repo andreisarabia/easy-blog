@@ -4,7 +4,6 @@ import uuid from 'uuid';
 import Router from './Router';
 import AdminAPIRouter from './api/AdminAPIRouter';
 
-const apiRouter = new AdminAPIRouter();
 const BASE_TITLE = ' - Admin';
 const TEN_MINUTES_IN_MS = 100000;
 
@@ -25,6 +24,9 @@ const cookie_middleware = (cookieName: string) => {
 export default class AdminRouter extends Router {
   constructor() {
     super('/admin', 'private');
+
+    const apiRouter = new AdminAPIRouter();
+
     this.instance
       .get('login', ctx => this.send_login_page(ctx))
       .use(cookie_middleware('easy-blog-admin:sess'))
