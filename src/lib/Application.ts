@@ -58,11 +58,11 @@ export default class Application {
       async (ctx: Koa.ParameterizedContext, next: () => Promise<void>) => {
         const start = Date.now();
 
-        if (!ctx.cookies.get(sessionConfig.key)) {
-          ctx.cookies.set(sessionConfig.key, random_id());
-        }
+        let n = ctx.session.views || 0;
+        ctx.session.views = ++n;
 
-        console.log(ctx.session.isNew);
+        log(ctx.session.isNew);
+        log(ctx.session.views);
 
         ctx.set({
           'X-Content-Type-Options': 'nosniff',
