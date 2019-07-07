@@ -41,16 +41,20 @@ export default class Application {
 
   private async bootstrap(): Promise<void> {
     const cspDirectives = get_csp_header();
+    const set_security_headers = (ctx: Koa.ParameterizedContext) =>
+      ctx.set({
+        'X-Content-Type-Options': 'nosniff',
+        'X-Frame-Options': 'deny',
+        'X-XSS-Protection': '1; mode=block',
+        'Content-Security-Policy': cspDirectives()
+      });
 
     this.app.use(
       async (ctx: Koa.ParameterizedContext, next: () => Promise<void>) => {
         try {
           const start = Date.now();
 
-          ctx.set('X-Content-Type-Options', 'nosniff');
-          ctx.set('X-Frame-Options', 'deny');
-          ctx.set('X-XSS-Protection', '1; mode=block');
-          ctx.set('Content-Security-Policy', cspDirectives());
+          set_security_headers(ctx);
 
           await next();
 

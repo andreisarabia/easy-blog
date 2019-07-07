@@ -58,7 +58,7 @@
     <script>
       const rootEl = document.body;
       rootEl.querySelector('nav button#reset-cache').onclick = async e => {
-        const res = await fetch('reset-template-cache', {
+        const res = await fetch('reset-templates', {
           method: 'POST'
         });
         console.log(await res.json());
