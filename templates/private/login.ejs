@@ -1,12 +1,14 @@
 <section id="admin-login">
   <h2>Login</h2>
   <form action="login" method="POST">
+    <input type="hidden" name="_csrf" />
     <input type="text" name="loginUsername" />
     <input type="password" name="loginPassword" id="" />
     <input type="submit" value="Submit" />
   </form>
   <h2>Register</h2>
   <form action="register" method="POST">
+    <input type="hidden" name="_csrf" />
     <input type="text" name="registerUsername" />
     <input type="password" name="registerPassword" id="" />
     <input type="submit" value="Submit" />

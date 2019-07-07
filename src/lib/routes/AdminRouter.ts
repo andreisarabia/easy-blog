@@ -1,16 +1,15 @@
 import Koa from 'koa';
-import koaBody from 'koa-body';
-import uuid from 'uuid';
+
 import { promises as fs } from 'fs';
 import bcrypt from 'bcrypt';
 import Router from './Router';
 import AdminAPIRouter from './api/AdminAPIRouter';
+import { random_id } from '../../util/fns';
 
 const BASE_TITLE = ' - Admin';
 const TEN_SECONDS_IN_MS = 10000;
 const SALT_ROUNDS = 10;
 
-const random_id = () => `${Date.now().toString()}-${uuid()}`;
 const is_valid_password = (pass: string) =>
   pass.length >= 2 && pass.length <= 55;
 
@@ -33,7 +32,6 @@ export default class AdminRouter extends Router {
     const apiRouter = new AdminAPIRouter();
 
     this.instance
-      .use(koaBody({ multipart: true }))
       .get('login', async ctx =>
         ctx.cookies.get(this.sessionCookieName)
           ? ctx.redirect('home')
