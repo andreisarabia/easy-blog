@@ -5,6 +5,26 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta http-equiv="X-UA-Compatible" content="ie=edge" />
     <title><%= title %></title>
+    <style>
+      body {
+        margin: 0rem;
+        padding: 1rem;
+        background: #fbf4f4;
+      }
+      body a {
+        text-decoration: none;
+        color: inherit;
+      }
+      nav > ul {
+        display: flex;
+        justify-content: space-evenly;
+        list-style: none;
+      }
+      main {
+        width: 80vw;
+        margin: 3rem auto;
+      }
+    </style>
   </head>
   <body>
     <header>
@@ -35,25 +55,6 @@
     </header>
     <main><%- template %></main>
     <footer></footer>
-    <style>
-      body {
-        margin: 0rem;
-        padding: 1rem;
-      }
-      body a {
-        text-decoration: none;
-        color: inherit;
-      }
-      nav > ul {
-        display: flex;
-        justify-content: space-evenly;
-        list-style: none;
-      }
-      main {
-        width: 80vw;
-        margin: 3rem auto;
-      }
-    </style>
     <script>
       const rootEl = document.body;
       rootEl.querySelector('nav button#reset-cache').onclick = async e => {

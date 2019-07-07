@@ -5,14 +5,19 @@ import KoaRouter from 'koa-router';
 import ejs from 'ejs';
 import { file_path_from_base, read_dir_recursively } from '../../util/fns';
 
+type RouterOptions = {
+  routerPrefix: string;
+  templatePath?: string;
+};
+
 export default class Router {
   protected instance: KoaRouter;
   private pathMap: Map<string, string[]> = new Map();
   private cachedTemplates: Map<string, Promise<string>>; // we don't initialize caching templates, so any router child can be API-only
   private templatePath: string;
 
-  constructor(prefix: string, templatePath?: string) {
-    this.instance = new KoaRouter({ prefix: `${prefix}/` });
+  constructor({ routerPrefix, templatePath }: RouterOptions) {
+    this.instance = new KoaRouter({ prefix: `${routerPrefix}/` });
     if (templatePath) {
       this.templatePath = `templates/${templatePath}`;
       this.setup_templates();

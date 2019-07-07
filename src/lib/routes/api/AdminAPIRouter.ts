@@ -1,5 +1,4 @@
 import Koa from 'koa';
-import koaBody from 'koa-body';
 import Router from './../Router';
 
 type CreateBlogPostParameters = {
@@ -11,12 +10,12 @@ type CreateBlogPostParameters = {
 
 export default class AdminAPIRouter extends Router {
   constructor() {
-    super('api');
+    super({ routerPrefix: 'api' });
 
-    this.instance.post('create-blog', ctx => this.create_blog_post(ctx));
+    this.instance.post('create-blog', async ctx => await this.create_post(ctx));
   }
 
-  private async create_blog_post(ctx: Koa.ParameterizedContext) {
+  private async create_post(ctx: Koa.ParameterizedContext) {
     const { id, authorId, title, content } = ctx.request
       .body as CreateBlogPostParameters;
   }
