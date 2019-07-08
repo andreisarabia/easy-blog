@@ -1,86 +1,77 @@
-require('dotenv').config();
-
 import Koa from 'koa';
 import koaBody from 'koa-body';
 import koaSession from 'koa-session';
+import KoaCSRF from 'koa-csrf';
 import routers from './routes/index';
 import { is_url, random_id } from '../util/fns';
 
-const contentSecurityPolicy = {
-  'default-src': ['self'],
-  'script-src': ['self', 'unsafe-inline'],
-  'style-src': ['self', 'unsafe-inline']
-};
-
+const TEN_MINUTES_IN_MS = 100000;
 const log = console.log;
 
-const get_csp_header = () => {
-  let cspString: string = null;
-  return (): string => {
-    if (cspString) return cspString;
-    const cspRules: string[] = Object.entries(contentSecurityPolicy).map(
-      ([src, directives]) => {
+export default class Application {
+  private app: Koa = new Koa();
+  private port: number = +process.env.PORT || 3000;
+  private readonly sessionConfig = {
+    key: 'easy-blog-visitor:sess',
+    maxAge: TEN_MINUTES_IN_MS,
+    httpOnly: true,
+    overwrite: true,
+    signed: true
+  };
+  private readonly contentSecurityPolicy = {
+    'default-src': ['self'],
+    'script-src': ['self', 'unsafe-inline'],
+    'style-src': ['self', 'unsafe-inline']
+  };
+  private startTime: number = Date.now();
+
+  private async bootstrap(): Promise<void> {
+    const cspRules = Object.entries(this.contentSecurityPolicy)
+      .map(([src, directives]) => {
         const preppedDirectives = directives.map(directive =>
           is_url(directive) || directive.startsWith('.*')
             ? directive
             : `'${directive}'`
         );
+
         return `${src} ${preppedDirectives.join(' ')}`;
-      }
-    );
-    cspString = cspRules.join('; ');
-    return cspString;
-  };
-};
+      })
+      .join('; ');
 
-export default class Application {
-  private app: Koa = new Koa();
-  private port: number = +process.env.PORT || 3000;
+    this.app.keys = ['easy-blog-app'];
 
-  constructor() {
-    this.app.keys = ['secret'];
-  }
-
-  private async bootstrap(): Promise<void> {
-    const cspDirectives = get_csp_header();
-    const sessionConfig = {
-      key: 'easy-blog-visitor:sess',
-      maxAge: 86400000,
-      httpOnly: true,
-      overwrite: true,
-      signed: true
-    };
-
-    this.app.use(koaSession(sessionConfig, this.app));
-    this.app.use(koaBody({ multipart: true }));
-
-    this.app.use(
-      async (ctx: Koa.ParameterizedContext, next: () => Promise<void>) => {
+    this.app
+      .on('error', err => log(err))
+      .use(koaBody({ multipart: true }))
+      .use(koaSession(this.sessionConfig, this.app))
+      .use(
+        new KoaCSRF({
+          invalidTokenMessage: 'Invalid request sent.',
+          invalidTokenStatusCode: 403
+        })
+      )
+      .use(async (ctx: Koa.ParameterizedContext, next: () => Promise<void>) => {
         const start = Date.now();
 
-        let n = ctx.session.views || 0;
-        ctx.session.views = ++n;
+        ctx.session.views = ctx.session.views + 1 || 1;
 
-        log(ctx.session.isNew);
-        log(ctx.session.views);
+        log('Views:', ctx.session.views);
 
         ctx.set({
           'X-Content-Type-Options': 'nosniff',
           'X-Frame-Options': 'deny',
           'X-XSS-Protection': '1; mode=block',
-          'Content-Security-Policy': cspDirectives()
+          'Content-Security-Policy': cspRules
         });
 
-        await next();
+        await next(); // will hand off request to rest of middlewares
 
         const xResponseTime = Date.now() - start;
 
         ctx.set('X-Response-Time', `${xResponseTime}ms`);
         log(`${ctx.method} ${ctx.url} (${ctx.status}) - ${xResponseTime}ms`);
-      }
-    );
+      });
 
-    this.app.on('error', err => log(err));
     await this.mount_routes();
   }
 
@@ -95,6 +86,12 @@ export default class Application {
 
   public async start(): Promise<void> {
     await this.bootstrap();
-    this.app.listen(this.port, () => log('Listening on port', this.port));
+
+    this.app.listen(this.port, () => {
+      log(
+        `Listening on port ${this.port}.\nStartup time: ${Date.now() -
+          this.startTime}ms`
+      );
+    });
   }
 }

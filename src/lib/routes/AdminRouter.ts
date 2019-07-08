@@ -6,6 +6,7 @@ import Router from './Router';
 import AdminAPIRouter from './api/AdminAPIRouter';
 import { random_id } from '../../util/fns';
 
+const log = console.log;
 const BASE_TITLE = ' - Admin';
 const TEN_SECONDS_IN_MS = 10000;
 const SALT_ROUNDS = 10;
@@ -32,52 +33,53 @@ export default class AdminRouter extends Router {
     const apiRouter = new AdminAPIRouter();
 
     this.instance
-      .get('login', async ctx =>
+      .get('login', ctx =>
         ctx.cookies.get(this.sessionCookieName)
           ? ctx.redirect('home')
-          : await this.send_login_page(ctx)
-      )
-      .post('login', async ctx => await this.login_user(ctx))
-      .post('register', async ctx =>
+          : this.send_login_page(ctx)
+      ) // reached login/register page, not logged in
+      .post('login', ctx => this.login_user(ctx))
+      .post('register', ctx =>
         ctx.cookies.get(this.sessionCookieName)
           ? ctx.redirect('home')
-          : await this.register_user(ctx)
-      )
-      .use(async (ctx, next) =>
-        ctx.cookies.get(this.sessionCookieName)
-          ? await next()
-          : ctx.redirect('login')
-      )
-      .get('home', async ctx => await this.send_home_page(ctx))
-      .get('posts', async ctx => await this.send_posts_page(ctx))
-      .post('reset-templates', async ctx => await this.refresh_templates(ctx))
+          : this.register_user(ctx)
+      ) // reached login/register page, not logged in
+      .use((ctx, next) =>
+        ctx.cookies.get(this.sessionCookieName) ? next() : ctx.redirect('login')
+      ) // reached past protected endpoint w/o valid cookie
+      .get('home', ctx => this.send_home_page(ctx))
+      .get('posts', ctx => this.send_posts_page(ctx))
+      .post('reset-templates', ctx => this.refresh_templates(ctx))
       .use(apiRouter.middleware.routes())
       .use(apiRouter.middleware.allowedMethods());
   }
 
   private async send_login_page(ctx: Koa.ParameterizedContext) {
-    ctx.body = await super.render('login.ejs');
+    ctx.body = await super.render('login.ejs', { csrf: ctx.csrf });
   }
 
   private async login_user(ctx: Koa.ParameterizedContext) {
     const { loginUsername, loginPassword } = ctx.request
       .body as AdminLoginParameters;
     const { username, password } = JSON.parse(
-      await fs.readFile('users', { encoding: 'utf-8' })
+      await fs.readFile('users.json', { encoding: 'utf-8' })
     );
-    const res = await bcrypt.compare(loginPassword, password);
+    const isUser = loginUsername === username;
+    const isMatchingPassword = await bcrypt.compare(loginPassword, password);
 
-    if (res) {
-      // TODO: actual password comparison...
-      ctx.cookies.set(this.sessionCookieName, random_id(), {
-        httpOnly: true,
-        signed: true,
-        maxAge: TEN_SECONDS_IN_MS
-      });
-      ctx.redirect('home');
-    } else {
+    if (!isUser || !isMatchingPassword) {
+      ctx.method = 'GET';
+      ctx.session = null;
       ctx.redirect('login');
     }
+
+    ctx.cookies.set(this.sessionCookieName, random_id(), {
+      httpOnly: true,
+      signed: true,
+      maxAge: TEN_SECONDS_IN_MS
+    });
+
+    ctx.redirect('home');
   }
 
   private async register_user(ctx: Koa.ParameterizedContext) {
@@ -98,8 +100,10 @@ export default class AdminRouter extends Router {
       maxAge: TEN_SECONDS_IN_MS
     });
 
+    log(registerUsername, registerPassword);
+
     await fs.writeFile(
-      'users',
+      'users.json',
       JSON.stringify({ username: registerUsername, password: hash })
     );
 
