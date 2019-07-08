@@ -33,23 +33,25 @@ export default class AdminRouter extends Router {
     const apiRouter = new AdminAPIRouter();
 
     this.instance
-      .get('login', ctx =>
+      .get('login', async ctx =>
         ctx.cookies.get(this.sessionCookieName)
           ? ctx.redirect('home')
-          : this.send_login_page(ctx)
+          : await this.send_login_page(ctx)
       ) // reached login/register page, not logged in
-      .post('login', ctx => this.login_user(ctx))
-      .post('register', ctx =>
+      .post('login', async ctx => await this.login_user(ctx))
+      .post('register', async ctx =>
         ctx.cookies.get(this.sessionCookieName)
           ? ctx.redirect('home')
-          : this.register_user(ctx)
+          : await this.register_user(ctx)
       ) // reached login/register page, not logged in
-      .use((ctx, next) =>
-        ctx.cookies.get(this.sessionCookieName) ? next() : ctx.redirect('login')
+      .use(async (ctx, next) =>
+        ctx.cookies.get(this.sessionCookieName)
+          ? await next()
+          : ctx.redirect('login')
       ) // reached past protected endpoint w/o valid cookie
-      .get('home', ctx => this.send_home_page(ctx))
-      .get('posts', ctx => this.send_posts_page(ctx))
-      .post('reset-templates', ctx => this.refresh_templates(ctx))
+      .get('home', async ctx => await this.send_home_page(ctx))
+      .get('posts', async ctx => await this.send_posts_page(ctx))
+      .post('reset-templates', async ctx => await this.refresh_templates(ctx))
       .use(apiRouter.middleware.routes())
       .use(apiRouter.middleware.allowedMethods());
   }
@@ -67,19 +69,18 @@ export default class AdminRouter extends Router {
     const isUser = loginUsername === username;
     const isMatchingPassword = await bcrypt.compare(loginPassword, password);
 
-    if (!isUser || !isMatchingPassword) {
+    if (isUser && isMatchingPassword) {
+      ctx.cookies.set(this.sessionCookieName, random_id(), {
+        httpOnly: true,
+        signed: true,
+        maxAge: TEN_SECONDS_IN_MS
+      });
+      ctx.redirect('home');
+    } else {
       ctx.method = 'GET';
       ctx.session = null;
       ctx.redirect('login');
     }
-
-    ctx.cookies.set(this.sessionCookieName, random_id(), {
-      httpOnly: true,
-      signed: true,
-      maxAge: TEN_SECONDS_IN_MS
-    });
-
-    ctx.redirect('home');
   }
 
   private async register_user(ctx: Koa.ParameterizedContext) {
@@ -92,15 +93,13 @@ export default class AdminRouter extends Router {
       'Password must be between 2 and 55 characters'
     );
 
-    const hash = await bcrypt.hash(registerPassword, SALT_ROUNDS);
-
     ctx.cookies.set(this.sessionCookieName, random_id(), {
       httpOnly: true,
       signed: true,
       maxAge: TEN_SECONDS_IN_MS
     });
 
-    log(registerUsername, registerPassword);
+    const hash = await bcrypt.hash(registerPassword, SALT_ROUNDS);
 
     await fs.writeFile(
       'users.json',
@@ -111,13 +110,6 @@ export default class AdminRouter extends Router {
   }
 
   private async send_home_page(ctx: Koa.ParameterizedContext) {
-    ctx.body = await super.render('home.ejs', {
-      msg: 'd',
-      title: `Home ${BASE_TITLE}`
-    });
-  }
-
-  private async send_posts_list(ctx: Koa.ParameterizedContext) {
     ctx.body = await super.render('home.ejs', {
       msg: 'd',
       title: `Home ${BASE_TITLE}`

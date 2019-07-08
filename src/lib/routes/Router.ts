@@ -1,9 +1,10 @@
 import { promises as fs, read } from 'fs';
 import path from 'path';
-import Koa from 'koa';
 import KoaRouter from 'koa-router';
 import ejs from 'ejs';
-import { file_path_from_base, read_dir_recursively } from '../../util/fns';
+import { read_dir_recursively } from '../../util/fns';
+
+const log = console.log;
 
 type RouterOptions = {
   routerPrefix: string;
@@ -19,7 +20,7 @@ export default class Router {
   constructor({ routerPrefix, templatePath }: RouterOptions) {
     this.instance = new KoaRouter({ prefix: `${routerPrefix}/` });
     if (templatePath) {
-      this.templatePath = `templates/${templatePath}`;
+      this.templatePath = `templates${path.sep}${templatePath}`;
       this.setup_templates();
     }
   }
@@ -32,14 +33,12 @@ export default class Router {
       const { dir } = path.parse(filePath);
       const newBasePath = dir.slice(dir.indexOf(this.templatePath));
       this.cachedTemplates.set(
-        `${newBasePath}/${path.basename(filePath)}`,
+        `${newBasePath}${path.sep}${path.basename(filePath)}`,
         fs.readFile(filePath, { encoding: 'utf-8' })
       );
     }
 
-    console.log(
-      `${Date.now() - start}ms to load templates in ${this.templatePath}`
-    );
+    log(`${Date.now() - start}ms to load templates in ${this.templatePath}`);
   }
 
   public get middleware(): KoaRouter {
@@ -67,8 +66,8 @@ export default class Router {
     data?: object | any
   ): Promise<string> {
     const [universalTemplate, requestedTemplate] = await Promise.all([
-      this.cachedTemplates.get(`${this.templatePath}/template.ejs`),
-      this.cachedTemplates.get(`${this.templatePath}/${templateName}`)
+      this.cachedTemplates.get(`${this.templatePath}${path.sep}template.ejs`),
+      this.cachedTemplates.get(`${this.templatePath}${path.sep}${templateName}`)
     ]);
     const { title = 'Easy Blog', ...restOfData } = data || {};
     const template = await ejs.render(

@@ -3,7 +3,7 @@ import koaBody from 'koa-body';
 import koaSession from 'koa-session';
 import KoaCSRF from 'koa-csrf';
 import routers from './routes/index';
-import { is_url, random_id } from '../util/fns';
+import { is_url } from '../util/fns';
 
 const TEN_MINUTES_IN_MS = 100000;
 const log = console.log;
@@ -24,6 +24,7 @@ export default class Application {
     'style-src': ['self', 'unsafe-inline']
   };
   private startTime: number = Date.now();
+  private allApplicationPaths: Set<string> = new Set();
 
   private async bootstrap(): Promise<void> {
     const cspRules = Object.entries(this.contentSecurityPolicy)
@@ -51,6 +52,8 @@ export default class Application {
         })
       )
       .use(async (ctx: Koa.ParameterizedContext, next: () => Promise<void>) => {
+        if (!this.allApplicationPaths.has(ctx.path)) return; // if it's not a path in the app setup, assume it's a static file or invalid
+
         const start = Date.now();
 
         ctx.session.views = ctx.session.views + 1 || 1;
@@ -80,7 +83,12 @@ export default class Application {
       this.app
         .use(router.middleware.routes())
         .use(router.middleware.allowedMethods());
+
       log(router.allPaths);
+
+      for (const path of router.allPaths.keys()) {
+        this.allApplicationPaths.add(path);
+      }
     }
   }
 
