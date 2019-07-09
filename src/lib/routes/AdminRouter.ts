@@ -33,34 +33,28 @@ export default class AdminRouter extends Router {
     const apiRouter = new AdminAPIRouter();
 
     this.instance
-      .get('login', async ctx =>
-        ctx.cookies.get(this.sessionCookieName)
-          ? ctx.redirect('home')
-          : await this.send_login_page(ctx)
-      ) // reached login/register page, not logged in
-      .post('login', async ctx => await this.login_user(ctx))
-      .post('register', async ctx =>
-        ctx.cookies.get(this.sessionCookieName)
-          ? ctx.redirect('home')
-          : await this.register_user(ctx)
-      ) // reached login/register page, not logged in
-      .use(async (ctx, next) =>
-        ctx.cookies.get(this.sessionCookieName)
-          ? await next()
-          : ctx.redirect('login')
+      .get('login', ctx => this.send_login_page(ctx))
+      .post('login', ctx => this.login_user(ctx))
+      .post('register', ctx => this.register_user(ctx))
+      .use((ctx, next) =>
+        ctx.cookies.get(this.sessionCookieName) ? next() : ctx.redirect('login')
       ) // reached past protected endpoint w/o valid cookie
-      .get('home', async ctx => await this.send_home_page(ctx))
-      .get('posts', async ctx => await this.send_posts_page(ctx))
-      .post('reset-templates', async ctx => await this.refresh_templates(ctx))
+      .get('home', ctx => this.send_home_page(ctx))
+      .get('posts', ctx => this.send_posts_page(ctx))
+      .post('reset-templates', ctx => this.refresh_templates(ctx))
       .use(apiRouter.middleware.routes())
       .use(apiRouter.middleware.allowedMethods());
   }
 
-  private async send_login_page(ctx: Koa.ParameterizedContext) {
+  private async send_login_page(ctx: Koa.ParameterizedContext): Promise<void> {
+    if (ctx.cookies.get(this.sessionCookieName)) return ctx.redirect('home'); // reached login/register page, not logged in
+
     ctx.body = await super.render('login.ejs', { csrf: ctx.csrf });
   }
 
-  private async login_user(ctx: Koa.ParameterizedContext) {
+  private async login_user(ctx: Koa.ParameterizedContext): Promise<void> {
+    if (ctx.cookies.get(this.sessionCookieName)) return ctx.redirect('home'); // reached login/register page, not logged in
+
     const { loginUsername, loginPassword } = ctx.request
       .body as AdminLoginParameters;
     const { username, password } = JSON.parse(
@@ -83,7 +77,9 @@ export default class AdminRouter extends Router {
     }
   }
 
-  private async register_user(ctx: Koa.ParameterizedContext) {
+  private async register_user(ctx: Koa.ParameterizedContext): Promise<void> {
+    if (ctx.cookies.get(this.sessionCookieName)) return ctx.redirect('home'); // reached login/register page, logged in
+
     const { registerUsername, registerPassword } = ctx.request
       .body as AdminRegisterParameters;
 
@@ -109,14 +105,14 @@ export default class AdminRouter extends Router {
     ctx.redirect('home');
   }
 
-  private async send_home_page(ctx: Koa.ParameterizedContext) {
+  private async send_home_page(ctx: Koa.ParameterizedContext): Promise<void> {
     ctx.body = await super.render('home.ejs', {
       msg: 'd',
       title: `Home ${BASE_TITLE}`
     });
   }
 
-  private async send_posts_page(ctx: Koa.ParameterizedContext) {
+  private async send_posts_page(ctx: Koa.ParameterizedContext): Promise<void> {
     const exampleData = {
       posts: [
         {
@@ -136,7 +132,9 @@ export default class AdminRouter extends Router {
     ctx.body = await super.render('posts.ejs', exampleData);
   }
 
-  private async refresh_templates(ctx: Koa.ParameterizedContext) {
+  private async refresh_templates(
+    ctx: Koa.ParameterizedContext
+  ): Promise<void> {
     await this.setup_templates();
     ctx.body = { msg: 'ok' };
   }
