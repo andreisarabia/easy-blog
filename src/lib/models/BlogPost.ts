@@ -1,20 +1,24 @@
 import Model from './Model';
 
+ type BlogPostParameters = {
+    id: string;
+    author: string;
+    timestamp: Date;
+    content: string;
+  };
+  
 export default class BlogPost extends Model {
-  constructor(props: object) {
-    super(props);
-  }
+  private id: string;
+  private author: string;
+  private timestamp: Date;
+  private content: string;
 
-  private get databaseColumns() {
-    return Object.keys(this.props);
-  }
+  constructor(props: BlogPostParameters) {
+    super();
 
-  public async save(): Promise<void> {
-    const columns = this.databaseColumns;
-    const sql = `INSERT INTO blog_posts (${columns}) VALUES (${super.create_sql_placeholders(
-      columns.length
-    )})`;
-
-    return;
+    this.id = props.id;
+    this.author = props.author;
+    this.timestamp = props.timestamp;
+    this.content = props.content;
   }
 }

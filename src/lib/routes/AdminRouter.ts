@@ -1,9 +1,9 @@
 import Koa from 'koa';
-
 import { promises as fs } from 'fs';
 import bcrypt from 'bcrypt';
 import Router from './Router';
 import AdminAPIRouter from './api/AdminAPIRouter';
+import BlogPost from '../models/BlogPost';
 import { random_id } from '../../util/fns';
 
 const log = console.log;
@@ -24,6 +24,13 @@ type AdminRegisterParameters = {
   registerPassword: string;
 };
 
+type BlogPostParameters = {
+  id: string;
+  author: string;
+  timestamp: Date;
+  content: string;
+};
+
 export default class AdminRouter extends Router {
   private readonly sessionCookieName = 'easy-blog-admin:sess';
 
@@ -36,24 +43,28 @@ export default class AdminRouter extends Router {
       .get('login', ctx => this.send_login_page(ctx))
       .post('login', ctx => this.login_user(ctx))
       .post('register', ctx => this.register_user(ctx))
-      .use((ctx, next) =>
-        ctx.cookies.get(this.sessionCookieName) ? next() : ctx.redirect('login')
-      ) // reached past protected endpoint w/o valid cookie
+      .use((ctx, next) => {
+        if (ctx.cookies.get(this.sessionCookieName)) return next();
+        ctx.method = 'GET';
+        ctx.redirect('login'); // tried to reach protected endpoints w/o valid cookie
+      })
       .get('home', ctx => this.send_home_page(ctx))
       .get('posts', ctx => this.send_posts_page(ctx))
+      .put('posts', ctx => this.create_post(ctx))
+      .post('posts', ctx => this.edit_post(ctx))
       .post('reset-templates', ctx => this.refresh_templates(ctx))
       .use(apiRouter.middleware.routes())
       .use(apiRouter.middleware.allowedMethods());
   }
 
   private async send_login_page(ctx: Koa.ParameterizedContext): Promise<void> {
-    if (ctx.cookies.get(this.sessionCookieName)) return ctx.redirect('home'); // reached login/register page, not logged in
+    if (ctx.cookies.get(this.sessionCookieName)) return ctx.redirect('home'); // reached login/register page, logged in
 
     ctx.body = await super.render('login.ejs', { csrf: ctx.csrf });
   }
 
   private async login_user(ctx: Koa.ParameterizedContext): Promise<void> {
-    if (ctx.cookies.get(this.sessionCookieName)) return ctx.redirect('home'); // reached login/register page, not logged in
+    if (ctx.cookies.get(this.sessionCookieName)) return ctx.redirect('home'); // reached login/register page, logged in
 
     const { loginUsername, loginPassword } = ctx.request
       .body as AdminLoginParameters;
@@ -72,7 +83,6 @@ export default class AdminRouter extends Router {
       ctx.redirect('home');
     } else {
       ctx.method = 'GET';
-      ctx.session = null;
       ctx.redirect('login');
     }
   }
@@ -130,6 +140,17 @@ export default class AdminRouter extends Router {
       ]
     };
     ctx.body = await super.render('posts.ejs', exampleData);
+  }
+
+  private async create_post(ctx: Koa.ParameterizedContext): Promise<void> {
+    const { id, author, timestamp, content } = ctx.request
+      .body as BlogPostParameters;
+    const blogPost = new BlogPost({ id, author, timestamp, content });
+  }
+
+  private async edit_post(ctx: Koa.ParameterizedContext): Promise<void> {
+    const { id, author, timestamp, content } = ctx.request
+      .body as BlogPostParameters;
   }
 
   private async refresh_templates(
