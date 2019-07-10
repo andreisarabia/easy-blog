@@ -1,6 +1,6 @@
 import Koa from 'koa';
-import Router from './../Router';
-import BlogPost from '../../models/BlogPost';
+import Router from '../Router';
+import BlogPost from '../../../../src/lib/models/BlogPost';
 
 type BlogPostParameters = {
   id: string;

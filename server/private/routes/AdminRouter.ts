@@ -40,12 +40,7 @@ export default class AdminRouter extends Router {
 
     this.instance
       .get('login', ctx => this.send_login_page(ctx))
-      .use(
-        koaStatic('/assets/private', {
-          maxAge: TEN_MINS_IN_MS,
-          defer: false
-        })
-      )
+
       .post('login', ctx => this.login_user(ctx))
       .post('register', ctx => this.register_user(ctx))
       .use(async (ctx, next) => {

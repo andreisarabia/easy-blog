@@ -6,13 +6,13 @@
     "removeComments": true,
     "preserveConstEnums": true,
     "watch": true,
-    "rootDir": "./src",
+    "rootDir": "./server",
     "outDir": "./build",
     "strictNullChecks": false,
     "esModuleInterop": true
   },
   "include": [
-    "src/**/*"
+    "server/**/*"
   ],
   "exclude": [
     "node_modules",

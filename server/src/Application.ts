@@ -4,6 +4,7 @@ import koaSession from 'koa-session';
 import KoaCSRF from 'koa-csrf';
 import routers from './routes/index';
 import { is_url } from '../util/fns';
+import koaStatic from 'koa-static';
 
 const TEN_MINUTES_IN_MS = 100000;
 const log = console.log;
@@ -45,6 +46,12 @@ export default class Application {
       .on('error', err => log(err))
       .use(koaBody({ multipart: true }))
       .use(koaSession(this.sessionConfig, this.app))
+      .use(
+        koaStatic('assets/private', {
+          maxAge: 100000,
+          defer: false
+        })
+      )
       .use(
         new KoaCSRF({
           invalidTokenMessage: 'Invalid request sent.',
