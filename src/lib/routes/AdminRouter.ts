@@ -1,7 +1,6 @@
 import Koa from 'koa';
 import { promises as fs } from 'fs';
 import bcrypt from 'bcrypt';
-
 import Router from './Router';
 import AdminAPIRouter from './api/AdminAPIRouter';
 import { random_id } from '../../util/fns';
