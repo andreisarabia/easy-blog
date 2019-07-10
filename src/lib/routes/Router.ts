@@ -1,14 +1,18 @@
-import { promises as fs, read } from 'fs';
-import path from 'path';
 import KoaRouter from 'koa-router';
+import koaStatic from 'koa-static';
 import ejs from 'ejs';
+import { promises as fs } from 'fs';
+import path from 'path';
 import { read_dir_recursively } from '../../util/fns';
 
 const log = console.log;
 
+const TEN_SECONDS_IN_MS = 10000;
+
 type RouterOptions = {
   routerPrefix: string;
   templatePath?: string;
+  assetsPath?: string;
 };
 
 export default class Router {
@@ -17,15 +21,23 @@ export default class Router {
   private cachedTemplates: Map<string, Promise<string>>; // we don't initialize caching templates, so any router child can be API-only
   private templatePath: string;
 
-  constructor({ routerPrefix, templatePath }: RouterOptions) {
+  constructor({ routerPrefix, templatePath, assetsPath }: RouterOptions) {
     this.instance = new KoaRouter({ prefix: `${routerPrefix}/` });
+
     if (templatePath) {
       this.templatePath = `templates${path.sep}${templatePath}`;
       this.setup_templates();
     }
+
+    if (assetsPath) {
+      const defaultStaticOptions = { maxAge: TEN_SECONDS_IN_MS, defer: true };
+      this.instance.use(
+        koaStatic(`assets${path.sep}${assetsPath}`, defaultStaticOptions)
+      );
+    }
   }
 
-  protected async setup_templates() {
+  protected async setup_templates(): Promise<void> {
     const start = Date.now();
     this.cachedTemplates = this.cachedTemplates || new Map();
 
