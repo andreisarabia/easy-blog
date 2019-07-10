@@ -58,7 +58,7 @@ export default class Application {
 
         ctx.session.views = ctx.session.views + 1 || 1;
 
-        log('Views:', ctx.session.views);
+        // log('Views:', ctx.session.views); 
 
         ctx.set({
           'X-Content-Type-Options': 'nosniff',

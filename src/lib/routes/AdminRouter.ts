@@ -1,14 +1,16 @@
 import Koa from 'koa';
 import { promises as fs } from 'fs';
 import bcrypt from 'bcrypt';
+import koaStatic from 'koa-static';
 import Router from './Router';
 import AdminAPIRouter from './api/AdminAPIRouter';
 import BlogPost from '../models/BlogPost';
 import { random_id } from '../../util/fns';
+import _fs from 'fs';
 
 const log = console.log;
 const BASE_TITLE = ' - Admin';
-const TEN_SECONDS_IN_MS = 10000;
+const TEN_SECONDS_IN_MS = 100000;
 const SALT_ROUNDS = 10;
 
 const is_valid_password = (pass: string) =>
@@ -40,13 +42,19 @@ export default class AdminRouter extends Router {
     const apiRouter = new AdminAPIRouter();
 
     this.instance
+      .use(
+        koaStatic('assets/private', { maxAge: TEN_SECONDS_IN_MS, defer: true })
+      )
       .get('login', ctx => this.send_login_page(ctx))
       .post('login', ctx => this.login_user(ctx))
       .post('register', ctx => this.register_user(ctx))
-      .use((ctx, next) => {
-        if (ctx.cookies.get(this.sessionCookieName)) return next();
-        ctx.method = 'GET';
-        ctx.redirect('login'); // tried to reach protected endpoints w/o valid cookie
+      .use(async (ctx, next) => {
+        if (ctx.cookies.get(this.sessionCookieName)) {
+          await next();
+        } else {
+          ctx.method = 'GET';
+          ctx.redirect('login'); // tried to reach protected endpoints w/o valid cookie
+        }
       })
       .get('home', ctx => this.send_home_page(ctx))
       .get('posts', ctx => this.send_posts_page(ctx))
@@ -66,11 +74,20 @@ export default class AdminRouter extends Router {
   private async login_user(ctx: Koa.ParameterizedContext): Promise<void> {
     if (ctx.cookies.get(this.sessionCookieName)) return ctx.redirect('home'); // reached login/register page, logged in
 
+    const f = await fs
+      .access('users.json', _fs.constants.F_OK)
+      .catch(err => err);
+
+    if (f instanceof Error) {
+      ctx.method = 'GET';
+      return ctx.redirect('login');
+    }
+
     const { loginUsername, loginPassword } = ctx.request
       .body as AdminLoginParameters;
     const { username, password } = JSON.parse(
       await fs.readFile('users.json', { encoding: 'utf-8' })
-    );
+    ); 
     const isUser = loginUsername === username;
     const isMatchingPassword = await bcrypt.compare(loginPassword, password);
 
