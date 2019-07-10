@@ -52,13 +52,12 @@ export default class Application {
         })
       )
       .use(async (ctx: Koa.ParameterizedContext, next: () => Promise<void>) => {
-        if (!this.allApplicationPaths.has(ctx.path)) return; // if it's not a path in the app setup, assume it's a static file or invalid
-
         const start = Date.now();
 
-        ctx.session.views = ctx.session.views + 1 || 1;
-
-        // log('Views:', ctx.session.views); 
+        if (this.allApplicationPaths.has(ctx.path)) {
+          ctx.session.views = ctx.session.views + 1 || 1;
+          log('Views:', ctx.session.views);
+        }
 
         ctx.set({
           'X-Content-Type-Options': 'nosniff',

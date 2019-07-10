@@ -24,16 +24,19 @@ export default class Router {
   constructor({ routerPrefix, templatePath, assetsPath }: RouterOptions) {
     this.instance = new KoaRouter({ prefix: `${routerPrefix}/` });
 
+    if (assetsPath) {
+      log(path.resolve('assets', assetsPath));
+      // this.instance.use(
+      //   koaStatic(path.resolve('assets', assetsPath), {
+      //     maxAge: TEN_SECONDS_IN_MS,
+      //     defer: true
+      //   })
+      // );
+    }
+
     if (templatePath) {
       this.templatePath = `templates${path.sep}${templatePath}`;
       this.setup_templates();
-    }
-
-    if (assetsPath) {
-      const defaultStaticOptions = { maxAge: TEN_SECONDS_IN_MS, defer: true };
-      this.instance.use(
-        koaStatic(`assets${path.sep}${assetsPath}`, defaultStaticOptions)
-      );
     }
   }
 

@@ -7,7 +7,7 @@ type BlogPostParameters = {
   author: string;
   timestamp: Date;
   content: string;
-};
+}; 
 
 export default class AdminAPIRouter extends Router {
   constructor() {

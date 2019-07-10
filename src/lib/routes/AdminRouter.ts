@@ -5,6 +5,8 @@ import Router from './Router';
 import AdminAPIRouter from './api/AdminAPIRouter';
 import { random_id } from '../../util/fns';
 import _fs from 'fs';
+import koaStatic from 'koa-static';
+import path from 'path';
 
 const log = console.log;
 const BASE_TITLE = ' - Admin';
@@ -38,6 +40,12 @@ export default class AdminRouter extends Router {
 
     this.instance
       .get('login', ctx => this.send_login_page(ctx))
+      .use(
+        koaStatic('/assets/private', {
+          maxAge: TEN_MINS_IN_MS,
+          defer: false
+        })
+      )
       .post('login', ctx => this.login_user(ctx))
       .post('register', ctx => this.register_user(ctx))
       .use(async (ctx, next) => {
@@ -48,6 +56,7 @@ export default class AdminRouter extends Router {
           ctx.redirect('login'); // tried to reach protected endpoints w/o valid cookie
         }
       })
+
       .get('home', ctx => this.send_home_page(ctx))
       .get('posts', ctx => this.send_posts_page(ctx))
       .post('reset-templates', ctx => this.refresh_templates(ctx))
