@@ -1,13 +1,13 @@
 import Koa from 'koa';
-import Router from '../Router';
-import BlogPost from '../../../../src/lib/models/BlogPost';
+import Router from '../../../src/Router';
+import BlogPost from '../../models/BlogPost';
 
 type BlogPostParameters = {
   id: string;
   author: string;
   timestamp: Date;
   content: string;
-}; 
+};
 
 export default class AdminAPIRouter extends Router {
   constructor() {

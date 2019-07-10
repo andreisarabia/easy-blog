@@ -18,8 +18,10 @@ export default class Application {
     return this.app;
   }
 
-  protected async setup_middlewares(): Promise<void> {
+  public async setup_middlewares(): Promise<void> {
     const adminApp = new AdminApplication();
+
+    await adminApp.setup_middlewares();
 
     this.app.use(koaMount('/admin', adminApp.middleware));
   }

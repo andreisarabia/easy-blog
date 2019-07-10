@@ -5,8 +5,6 @@ import Router from '../../src/Router';
 import AdminAPIRouter from './api/AdminAPIRouter';
 import { random_id } from '../../util/fns';
 import _fs from 'fs';
-import koaStatic from 'koa-static';
-import path from 'path';
 
 const log = console.log;
 const BASE_TITLE = ' - Admin';
@@ -30,11 +28,7 @@ export default class AdminRouter extends Router {
   private readonly sessionCookieName = 'easy-blog-admin:sess';
 
   constructor() {
-    super({
-      routerPrefix: '/admin',
-      templatePath: 'private',
-      assetsPath: 'private'
-    });
+    super({ routerPrefix: '/admin', templatePath: 'private' });
 
     const apiRouter = new AdminAPIRouter();
 

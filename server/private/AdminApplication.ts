@@ -14,17 +14,20 @@ export default class AdminApplication extends Application {
     'script-src': ['self', 'unsafe-inline'],
     'style-src': ['self', 'unsafe-inline']
   };
-  protected appPaths: Set<string> = new Set();
+  private readonly sessionConfig = {
+    key: 'easy-blog-admin:sess',
+    httpOnly: true
+  };
+  protected appPaths: Set<string>;
 
   constructor() {
     super();
     this.app.keys = ['easy-blog-admin'];
   }
 
-  protected async setup_middlewares(): Promise<void> {
+  public async setup_middlewares(): Promise<void> {
     const adminRouter = new AdminRouter();
-
-    [...adminRouter.allPaths.keys()].forEach(path => this.appPaths.add(path));
+    this.appPaths = new Set([...adminRouter.allPaths.keys()]);
 
     const cspRules = Object.entries(this.contentSecurityPolicy)
       .map(([src, directives]) => {
@@ -40,6 +43,7 @@ export default class AdminApplication extends Application {
 
     this.app
       .use(koaBody({ multipart: true }))
+      .use(koaSession(this.sessionConfig, this.app))
       .use(new KoaCSRF())
       .use(async (ctx, next) => {
         const start = Date.now();
