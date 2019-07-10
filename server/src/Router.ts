@@ -1,9 +1,8 @@
 import KoaRouter from 'koa-router';
-import koaStatic from 'koa-static';
 import ejs from 'ejs';
 import { promises as fs } from 'fs';
 import path from 'path';
-import { read_dir_recursively } from '../../util/fns';
+import { read_dir_recursively } from '../util/fns';
 
 const log = console.log;
 
@@ -12,7 +11,6 @@ const TEN_SECONDS_IN_MS = 10000;
 type RouterOptions = {
   routerPrefix: string;
   templatePath?: string;
-  assetsPath?: string;
 };
 
 export default class Router {
@@ -21,18 +19,8 @@ export default class Router {
   private cachedTemplates: Map<string, Promise<string>>; // we don't initialize caching templates, so any router child can be API-only
   private templatePath: string;
 
-  constructor({ routerPrefix, templatePath, assetsPath }: RouterOptions) {
+  constructor({ routerPrefix = '', templatePath }: RouterOptions) {
     this.instance = new KoaRouter({ prefix: `${routerPrefix}/` });
-
-    if (assetsPath) {
-      log(path.resolve('assets', assetsPath));
-      // this.instance.use(
-      //   koaStatic(path.resolve('assets', assetsPath), {
-      //     maxAge: TEN_SECONDS_IN_MS,
-      //     defer: true
-      //   })
-      // );
-    }
 
     if (templatePath) {
       this.templatePath = `templates${path.sep}${templatePath}`;
