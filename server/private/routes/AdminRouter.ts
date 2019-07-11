@@ -28,13 +28,12 @@ export default class AdminRouter extends Router {
   private readonly sessionCookieName = 'easy-blog-admin:sess';
 
   constructor() {
-    super({ routerPrefix: '/admin', templatePath: 'private' });
+    super({ prefix: '/', templatePath: 'private' });
 
     const apiRouter = new AdminAPIRouter();
 
     this.instance
       .get('login', ctx => this.send_login_page(ctx))
-
       .post('login', ctx => this.login_user(ctx))
       .post('register', ctx => this.register_user(ctx))
       .use(async (ctx, next) => {
@@ -45,7 +44,6 @@ export default class AdminRouter extends Router {
           ctx.redirect('login'); // tried to reach protected endpoints w/o valid cookie
         }
       })
-
       .get('home', ctx => this.send_home_page(ctx))
       .get('posts', ctx => this.send_posts_page(ctx))
       .post('reset-templates', ctx => this.refresh_templates(ctx))

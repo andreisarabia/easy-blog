@@ -11,7 +11,7 @@ type BlogPostParameters = {
 
 export default class AdminAPIRouter extends Router {
   constructor() {
-    super({ routerPrefix: 'api' });
+    super({ prefix: 'api/' });
 
     this.instance
       .put('posts', ctx => this.create_post(ctx))

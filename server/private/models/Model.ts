@@ -1,4 +1,4 @@
-import Database from '../Database';
+import Database from '../../src/Database';
 
 export default class Model {
   protected db: Database = new Database();

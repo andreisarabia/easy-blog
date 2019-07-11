@@ -25,7 +25,7 @@ export default class AdminApplication extends Application {
     this.app.keys = ['easy-blog-admin'];
   }
 
-  public async setup_middlewares(): Promise<void> {
+  private async setup_middlewares(): Promise<void> {
     const adminRouter = new AdminRouter();
     this.appPaths = new Set([...adminRouter.allPaths.keys()]);
 
@@ -45,6 +45,7 @@ export default class AdminApplication extends Application {
       .use(koaBody({ multipart: true }))
       .use(koaSession(this.sessionConfig, this.app))
       .use(new KoaCSRF())
+      .use(koaStatic('assets/private'))
       .use(async (ctx, next) => {
         const start = Date.now();
 
@@ -68,8 +69,14 @@ export default class AdminApplication extends Application {
 
         log(`${ctx.method} ${ctx.url} (${ctx.status}) - ${xResponseTime}ms`);
       })
-      .use(koaStatic('assets/private'))
       .use(adminRouter.middleware.routes())
       .use(adminRouter.middleware.allowedMethods());
+
+    log(this.appPaths);
+    log(adminRouter.allPaths);
+  }
+
+  public async setup(): Promise<void> {
+    await this.setup_middlewares();
   }
 }
