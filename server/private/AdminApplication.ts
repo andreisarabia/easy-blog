@@ -1,14 +1,15 @@
+import Koa from 'koa';
 import koaStatic from 'koa-static';
 import koaBody from 'koa-body';
 import KoaCSRF from 'koa-csrf';
 import koaSession from 'koa-session';
-import Application from '../src/Application';
 import AdminRouter from './routes/AdminRouter';
 import { is_url } from '../util/fns';
 
 const log = console.log;
 
-export default class AdminApplication extends Application {
+export default class AdminApplication {
+  private app: Koa = new Koa();
   private readonly contentSecurityPolicy = {
     'default-src': ['self'],
     'script-src': ['self', 'unsafe-inline'],
@@ -16,16 +17,21 @@ export default class AdminApplication extends Application {
   };
   private readonly sessionConfig = {
     key: 'easy-blog-admin:sess',
-    httpOnly: true
+    httpOnly: true,
+    signed: true,
+    rolling: true
   };
   protected appPaths: Set<string>;
 
-  constructor() {
-    super();
-    this.app.keys = ['easy-blog-admin'];
+  public get middleware() {
+    return this.app;
   }
 
-  private async setup_middlewares(): Promise<void> {
+  public async setup(app: Koa): Promise<Koa> {
+    return await this.setup_middlewares(app);
+  }
+
+  private async setup_middlewares(app: Koa): Promise<Koa> {
     const adminRouter = new AdminRouter();
     this.appPaths = new Set([...adminRouter.allPaths.keys()]);
 
@@ -41,18 +47,20 @@ export default class AdminApplication extends Application {
       })
       .join('; ');
 
+    app.keys = ['easy-blog-admin'];
+
     this.app
-      .use(koaBody({ multipart: true }))
-      .use(koaSession(this.sessionConfig, this.app))
+      .use(koaBody({ json: true, multipart: true }))
+      .use(koaSession(this.sessionConfig, app))
       .use(new KoaCSRF())
       .use(koaStatic('assets/private'))
       .use(async (ctx, next) => {
         const start = Date.now();
 
-        if (this.appPaths.has(ctx.path)) {
-          ctx.session.views = ctx.session.views + 1 || 1;
-          log('Views:', ctx.session.views);
-        }
+        // if (this.appPaths.has(ctx.path)) {
+        //   ctx.session.views = ctx.session.views + 1 || 1;
+        //   log('Views:', ctx.session.views);
+        // }
 
         ctx.set({
           'X-Content-Type-Options': 'nosniff',
@@ -74,9 +82,7 @@ export default class AdminApplication extends Application {
 
     log(this.appPaths);
     log(adminRouter.allPaths);
-  }
 
-  public async setup(): Promise<void> {
-    await this.setup_middlewares();
+    return this.app;
   }
 }
