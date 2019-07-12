@@ -8,7 +8,7 @@ import _fs from 'fs';
 
 const log = console.log;
 const BASE_TITLE = ' - Admin';
-const TEN_MINS_IN_MS = 100000; // ten mins for now to dev...
+const TEN_MINS_IN_MS = 10000; // ten mins for now to dev...
 const SALT_ROUNDS = 10;
 
 const is_valid_password = (pass: string) =>
@@ -26,9 +26,14 @@ type AdminRegisterParameters = {
 
 export default class AdminRouter extends Router {
   private readonly sessionCookieName = 'easy-blog-admin:sess';
+  private readonly sessionConfig = {
+    httpOnly: true,
+    signed: true,
+    maxAge: TEN_MINS_IN_MS
+  };
 
   constructor() {
-    super({ prefix: '/', templatePath: 'private' });
+    super({ templatePath: 'private' });
 
     const apiRouter = new AdminAPIRouter();
 
@@ -78,11 +83,7 @@ export default class AdminRouter extends Router {
     const isMatchingPassword = await bcrypt.compare(loginPassword, password);
 
     if (isUser && isMatchingPassword) {
-      ctx.cookies.set(this.sessionCookieName, random_id(), {
-        httpOnly: true,
-        signed: true,
-        maxAge: TEN_MINS_IN_MS
-      });
+      ctx.cookies.set(this.sessionCookieName, random_id(), this.sessionConfig);
       ctx.redirect('home');
     } else {
       ctx.method = 'GET';
@@ -102,18 +103,14 @@ export default class AdminRouter extends Router {
       'Password must be between 2 and 55 characters'
     );
 
-    ctx.cookies.set(this.sessionCookieName, random_id(), {
-      httpOnly: true,
-      signed: true,
-      maxAge: TEN_MINS_IN_MS
-    });
-
     const hash = await bcrypt.hash(registerPassword, SALT_ROUNDS);
 
     await fs.writeFile(
       'users.json',
       JSON.stringify({ username: registerUsername, password: hash })
     );
+
+    ctx.cookies.set(this.sessionCookieName, random_id(), this.sessionConfig);
 
     ctx.redirect('home');
   }

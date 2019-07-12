@@ -9,8 +9,8 @@ const log = console.log;
 const TEN_SECONDS_IN_MS = 10000;
 
 type RouterOptions = {
-  prefix: string;
   templatePath?: string;
+  prefix?: string;
 };
 
 export default class Router {
@@ -18,14 +18,14 @@ export default class Router {
   private pathMap: Map<string, string[]> = new Map();
   private cachedTemplates: Map<string, Promise<string>>; // we don't initialize caching templates, so any router child can be API-only
   private templatePath: string;
-
-  constructor({ prefix = '', templatePath }: RouterOptions) {
-    this.instance = new KoaRouter({ prefix });
-
+  
+  constructor({ templatePath, prefix = '/' }: RouterOptions) {
     if (templatePath) {
       this.templatePath = `templates${path.sep}${templatePath}`;
       this.setup_templates();
     }
+
+    this.instance = new KoaRouter({ prefix });
   }
 
   protected async setup_templates(): Promise<void> {

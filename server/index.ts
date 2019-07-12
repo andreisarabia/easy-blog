@@ -3,21 +3,19 @@ require('dotenv').config();
 import Koa from 'koa';
 import koaMount from 'koa-mount';
 import koaSession from 'koa-session';
-// import AdminApplication from './private/AdminApplication';
-import AdminRouter from './private/routes/AdminRouter';
+import AdminApplication from './private/AdminApplication';
 
 const main = async (): Promise<void> => {
-  const adminApp = new Koa();
+  const mountedPrefix = '/admin';
   const app = new Koa();
-  const adminRouter = new AdminRouter();
+  const adminApp = new AdminApplication(mountedPrefix);
 
-  adminApp
-    .use(adminRouter.middleware.routes())
-    .use(adminRouter.middleware.allowedMethods());
+  app.keys = ['easy-blog-visitor'];
 
-  app.use(koaMount('/admin', adminApp));
-
-  app.listen(+process.env.PORT || 3000, () => console.log('Listening...'));
+  app
+    .use(koaSession({ key: 'eb-visitor', maxAge: 10000 }, app))
+    .use(koaMount(mountedPrefix, adminApp.middleware))
+    .listen(+process.env.PORT || 3000, () => console.log('Listening...'));
 };
 
 main().catch(console.error);

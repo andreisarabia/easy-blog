@@ -6,7 +6,7 @@
   "main": "src/index.ts",
   "scripts": {
     "dev": "node_modules/.bin/tsc",
-    "dev:serve": "node_modules/.bin/nodemon build/index.js"
+    "dev:serve": "DEBUG=koa-mount node_modules/.bin/nodemon build/index.js"
   },
   "keywords": [],
   "author": "",
