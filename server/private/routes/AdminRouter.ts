@@ -7,7 +7,7 @@ import { random_id } from '../../util/fns';
 
 const log = console.log;
 const BASE_TITLE = ' - Admin';
-const ONE_DAY_IN_MS = 86400; // ten mins for now to dev...
+const ONE_DAY_IN_MS = 86400;
 const SALT_ROUNDS = 10;
 
 const is_valid_password = (pass: string) =>
@@ -35,7 +35,7 @@ export default class AdminRouter extends Router {
   private readonly sessionConfig = {
     httpOnly: true,
     signed: true,
-    maxAge: process.env.NODE_END !== 'production' ? undefined : ONE_DAY_IN_MS
+    maxAge: process.env.NODE_END !== 'production' ? undefined : ONE_DAY_IN_MS // koaSession will default to 'session'
   };
 
   constructor() {
@@ -65,13 +65,13 @@ export default class AdminRouter extends Router {
   }
 
   private async send_login_page(ctx: Koa.ParameterizedContext): Promise<void> {
-    if (ctx.cookies.get(this.sessionCookieName)) return ctx.redirect('home'); // reached login/register page, logged in
+    if (ctx.cookies.get(this.sessionCookieName)) ctx.redirect('home'); // reached login/register page, logged in
 
     ctx.body = await super.render('login.ejs', { csrf: ctx.csrf });
   }
 
   private async login_user(ctx: Koa.ParameterizedContext): Promise<void> {
-    if (ctx.cookies.get(this.sessionCookieName)) return ctx.redirect('home'); // reached login/register page, logged in
+    if (ctx.cookies.get(this.sessionCookieName)) ctx.redirect('home'); // reached login/register page, logged in
 
     const { loginUsername, loginPassword } = ctx.request
       .body as AdminLoginParameters;
@@ -91,7 +91,7 @@ export default class AdminRouter extends Router {
   }
 
   private async register_user(ctx: Koa.ParameterizedContext): Promise<void> {
-    if (ctx.cookies.get(this.sessionCookieName)) return ctx.redirect('home'); // reached login/register page, logged in
+    if (ctx.cookies.get(this.sessionCookieName)) ctx.redirect('home'); // reached login/register page, logged in
 
     const { registerUsername, registerPassword } = ctx.request
       .body as AdminRegisterParameters;
@@ -99,7 +99,7 @@ export default class AdminRouter extends Router {
     ctx.assert(
       is_valid_password(registerPassword),
       401,
-      'Password must be between 2 and 55 characters'
+      'Password must be between 2 and 55 characters' // for now...
     );
 
     const hash = await bcrypt.hash(registerPassword, SALT_ROUNDS);

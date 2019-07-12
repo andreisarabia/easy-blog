@@ -9,14 +9,13 @@ const log = console.log;
 
 export default class AdminApplication {
   private app = new Koa();
-  private appPaths: string[];
-  private readonly contentSecurityPolicy = {
+  private readonly contentSecurityPolicy = Object.entries({
     'default-src': ['self'],
     'script-src': ['self', 'unsafe-inline'],
     'style-src': ['self', 'unsafe-inline']
-  };
+  });
 
-  constructor(mountedPrefix: string) {
+  constructor() {
     this.setup_middlewares();
   }
 
@@ -26,7 +25,7 @@ export default class AdminApplication {
 
   private setup_middlewares(): void {
     const adminRouter = new AdminRouter();
-    const cspDirectives = Object.entries(this.contentSecurityPolicy).reduce(
+    const cspDirectives = this.contentSecurityPolicy.reduce(
       (cspString, [src, directives]) => {
         const preppedDirectives = directives
           .map(directive =>
@@ -35,10 +34,11 @@ export default class AdminApplication {
               : `'${directive}'`
           )
           .join(' ');
+        const directiveRule = `${src} ${preppedDirectives}`;
 
         return cspString
-          ? `${cspString}; ${src} ${preppedDirectives}`
-          : `${src} ${preppedDirectives}`;
+          ? `${cspString}; ${directiveRule}`
+          : `${directiveRule}`;
       },
       ''
     );
