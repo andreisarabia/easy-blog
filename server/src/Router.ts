@@ -18,34 +18,45 @@ export default class Router {
   private pathMap: Map<string, string[]> = new Map();
   private cachedTemplates: Map<string, Promise<string>>; // we don't initialize caching templates, so any router child can be API-only
   private templatePath: string;
-  
+  private isRefreshingCache: boolean = false;
+
   constructor({ templatePath, prefix = '/' }: RouterOptions) {
     if (templatePath) {
       this.templatePath = `templates${path.sep}${templatePath}`;
-      this.setup_templates();
+      this.cachedTemplates = new Map();
+      this.refresh_template_cache();
     }
 
     this.instance = new KoaRouter({ prefix });
   }
 
-  protected async setup_templates(): Promise<void> {
-    const start = Date.now();
-    this.cachedTemplates = this.cachedTemplates || new Map();
-
-    for await (const filePath of read_dir_recursively(this.templatePath)) {
-      const { dir } = path.parse(filePath);
-      const newBasePath = dir.slice(dir.indexOf(this.templatePath));
-      this.cachedTemplates.set(
-        `${newBasePath}${path.sep}${path.basename(filePath)}`,
-        fs.readFile(filePath, { encoding: 'utf-8' })
-      );
-    }
-
-    log(`${Date.now() - start}ms to load templates in ${this.templatePath}`);
-  }
-
   public get middleware(): KoaRouter {
     return this.instance;
+  }
+
+  // when no templates in cache, we fill it up;
+  // when templates are in cache, we replace each entry with
+  // a refreshed read of its file
+  protected async refresh_template_cache(): Promise<void> {
+    const start = Date.now();
+
+    const refresh_templates = async () => {
+      this.isRefreshingCache = true;
+      for await (const filePath of read_dir_recursively(this.templatePath)) {
+        const { dir } = path.parse(filePath);
+        const newBasePath = dir.slice(dir.indexOf(this.templatePath));
+        this.cachedTemplates.set(
+          `${newBasePath}${path.sep}${path.basename(filePath)}`,
+          fs.readFile(filePath, { encoding: 'utf-8' })
+        );
+      }
+      this.isRefreshingCache = false;
+    };
+
+    if (this.cachedTemplates.size === 0 || !this.isRefreshingCache) {
+      await refresh_templates();
+      log(`${Date.now() - start}ms to load templates in ${this.templatePath}`);
+    }
   }
 
   public get allPaths(): Map<string, string[]> {
@@ -72,13 +83,14 @@ export default class Router {
       this.cachedTemplates.get(`${this.templatePath}${path.sep}template.ejs`),
       this.cachedTemplates.get(`${this.templatePath}${path.sep}${templateName}`)
     ]);
-    const { title = 'Easy Blog', ...restOfData } = data || {};
+    const { title = 'Easy Blog', csrf = '', ...restOfData } = data || {};
     const template = await ejs.render(
       requestedTemplate,
-      { ...restOfData },
+      { csrf, ...restOfData },
       { async: true }
     );
+    const universalData = { title, template, csrf };
 
-    return ejs.render(universalTemplate, { template, title }, { async: true });
+    return ejs.render(universalTemplate, universalData, { async: true });
   }
 }

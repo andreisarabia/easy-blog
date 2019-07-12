@@ -70,6 +70,6 @@ export default class AdminApplication {
       })
       .use(adminRouter.middleware.routes())
       .use(adminRouter.middleware.allowedMethods())
-      .use(koaStatic('assets/private'));
+      .use(koaStatic('assets/private', { defer: true }));
   }
 }

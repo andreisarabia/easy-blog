@@ -1,10 +1,11 @@
 <section id="admin-posts">
   <div id="posts-header">
     <div class="post-header">
-      <h2>Posts</h2>
+      <h2><%= headerTitle %></h2>
     </div>
   </div>
   <div id="posts-summary">
+    <% if (posts) { %>
     <div id="posts-columns">
       <h3>ID</h3>
       <h3>Author</h3>
@@ -21,12 +22,13 @@
       </div>
       <% }) %>
     </div>
+    <% } %>
   </div>
   <style>
-    div#posts-columns, div.post {
+    div#posts-columns,
+    div.post {
       display: grid;
       grid-template-columns: repeat(4, 1fr);
     }
   </style>
-  <script src="js/main.js"></script>
 </section>

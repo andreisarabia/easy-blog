@@ -29,6 +29,11 @@ type AdminBlogPostParameters = {
 
 type AdminBlogPostActions = 'new' | 'edit';
 
+type AdminBlogPostActionData = {
+  headerTitle: string;
+  posts: object[];
+};
+
 export default class AdminRouter extends Router {
   private readonly sessionCookieName = 'easy-blog-admin:sess';
   private readonly sessionConfig = {
@@ -116,51 +121,52 @@ export default class AdminRouter extends Router {
   private async send_home_page(ctx: Koa.ParameterizedContext): Promise<void> {
     ctx.body = await super.render('home.ejs', {
       msg: 'd',
-      title: `Home ${BASE_TITLE}`
+      title: `Home ${BASE_TITLE}`,
+      csrf: ctx.csrf
     });
   }
 
   private async send_posts_page(ctx: Koa.ParameterizedContext): Promise<void> {
     const { action } = ctx.query as AdminBlogPostParameters;
-
-    let template: string, data: object;
+    const data: AdminBlogPostActionData = { headerTitle: '', posts: null };
 
     switch (action) {
       case 'new':
         // something
+        data.headerTitle = 'New Post';
         break;
       case 'edit':
-        // someething
+        // something
         break;
       case undefined:
-        log(action);
         // something
-        template = 'posts.ejs';
-        data = {
-          posts: [
-            {
-              id: 1,
-              name: 'dre sar',
-              snippet: '... here i was',
-              date: new Date()
-            },
-            {
-              id: 2,
-              name: 'sar dreee',
-              snippet: 'there i go...',
-              date: new Date()
-            }
-          ]
-        };
+        data.headerTitle = 'Posts';
+        data.posts = [
+          {
+            id: 1,
+            name: 'dre sar',
+            snippet: '... here i was',
+            date: new Date()
+          },
+          {
+            id: 2,
+            name: 'sar dreee',
+            snippet: 'there i go...',
+            date: new Date()
+          }
+        ];
+        break;
+      default:
+        ctx.redirect('back');
     }
 
-    ctx.body = await super.render(template, data);
+    ctx.body = await super.render('posts.ejs', { ...data, csrf: ctx.csrf });
   }
 
   private async refresh_templates(
     ctx: Koa.ParameterizedContext
   ): Promise<void> {
-    await this.setup_templates();
+    await super.refresh_template_cache();
     ctx.body = { msg: 'ok' };
   }
 }
