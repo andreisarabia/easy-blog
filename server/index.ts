@@ -8,6 +8,7 @@ import AdminApplication from './private/AdminApplication';
 const main = async (): Promise<void> => {
   const mountedPrefix = '/admin';
   const app = new Koa();
+  const appPort: number = +process.env.PORT || 3000;
   const adminApp = new AdminApplication(mountedPrefix);
 
   app.keys = ['easy-blog-visitor'];
@@ -15,7 +16,7 @@ const main = async (): Promise<void> => {
   app
     .use(koaSession({ key: 'eb-visitor', maxAge: 10000 }, app))
     .use(koaMount(mountedPrefix, adminApp.middleware))
-    .listen(+process.env.PORT || 3000, () => console.log('Listening...'));
+    .listen(appPort, () => console.log('Listening...'));
 };
 
 main().catch(console.error);

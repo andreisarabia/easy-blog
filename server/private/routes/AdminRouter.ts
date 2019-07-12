@@ -4,11 +4,10 @@ import bcrypt from 'bcrypt';
 import Router from '../../src/Router';
 import AdminAPIRouter from './api/AdminAPIRouter';
 import { random_id } from '../../util/fns';
-import _fs from 'fs';
 
 const log = console.log;
 const BASE_TITLE = ' - Admin';
-const TEN_MINS_IN_MS = 10000; // ten mins for now to dev...
+const ONE_DAY_IN_MS = 86400; // ten mins for now to dev...
 const SALT_ROUNDS = 10;
 
 const is_valid_password = (pass: string) =>
@@ -24,12 +23,18 @@ type AdminRegisterParameters = {
   registerPassword: string;
 };
 
+type AdminBlogPostParameters = {
+  action: AdminBlogPostActions;
+};
+
+type AdminBlogPostActions = 'new' | 'edit';
+
 export default class AdminRouter extends Router {
   private readonly sessionCookieName = 'easy-blog-admin:sess';
   private readonly sessionConfig = {
     httpOnly: true,
     signed: true,
-    maxAge: TEN_MINS_IN_MS
+    maxAge: process.env.NODE_END !== 'production' ? undefined : ONE_DAY_IN_MS
   };
 
   constructor() {
@@ -54,6 +59,8 @@ export default class AdminRouter extends Router {
       .post('reset-templates', ctx => this.refresh_templates(ctx))
       .use(apiRouter.middleware.routes())
       .use(apiRouter.middleware.allowedMethods());
+
+    log('Admin paths:', this.allPaths);
   }
 
   private async send_login_page(ctx: Koa.ParameterizedContext): Promise<void> {
@@ -64,15 +71,6 @@ export default class AdminRouter extends Router {
 
   private async login_user(ctx: Koa.ParameterizedContext): Promise<void> {
     if (ctx.cookies.get(this.sessionCookieName)) return ctx.redirect('home'); // reached login/register page, logged in
-
-    const f = await fs
-      .access('users.json', _fs.constants.F_OK)
-      .catch(err => err);
-
-    if (f instanceof Error) {
-      ctx.method = 'GET';
-      return ctx.redirect('login');
-    }
 
     const { loginUsername, loginPassword } = ctx.request
       .body as AdminLoginParameters;
@@ -123,23 +121,40 @@ export default class AdminRouter extends Router {
   }
 
   private async send_posts_page(ctx: Koa.ParameterizedContext): Promise<void> {
-    const exampleData = {
-      posts: [
-        {
-          id: 1,
-          name: 'dre sar',
-          snippet: '... here i was',
-          date: new Date()
-        },
-        {
-          id: 2,
-          name: 'sar dreee',
-          snippet: 'there i go...',
-          date: new Date()
-        }
-      ]
-    };
-    ctx.body = await super.render('posts.ejs', exampleData);
+    const { action } = ctx.query as AdminBlogPostParameters;
+
+    let template: string, data: object;
+
+    switch (action) {
+      case 'new':
+        // something
+        break;
+      case 'edit':
+        // someething
+        break;
+      case undefined:
+        log(action);
+        // something
+        template = 'posts.ejs';
+        data = {
+          posts: [
+            {
+              id: 1,
+              name: 'dre sar',
+              snippet: '... here i was',
+              date: new Date()
+            },
+            {
+              id: 2,
+              name: 'sar dreee',
+              snippet: 'there i go...',
+              date: new Date()
+            }
+          ]
+        };
+    }
+
+    ctx.body = await super.render(template, data);
   }
 
   private async refresh_templates(
