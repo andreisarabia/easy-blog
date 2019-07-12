@@ -17,22 +17,18 @@ type AdminLoginParameters = {
   loginUsername: string;
   loginPassword: string;
 };
-
 type AdminRegisterParameters = {
   registerUsername: string;
   registerPassword: string;
 };
-
 type AdminBlogPostParameters = {
   action: AdminBlogPostActions;
 };
-
-type AdminBlogPostActions = 'new' | 'edit';
-
 type AdminBlogPostActionData = {
   headerTitle: string;
   posts: object[];
 };
+type AdminBlogPostActions = 'new' | 'edit';
 
 export default class AdminRouter extends Router {
   private readonly sessionCookieName = 'easy-blog-admin:sess';
@@ -132,14 +128,13 @@ export default class AdminRouter extends Router {
 
     switch (action) {
       case 'new':
-        // something
         data.headerTitle = 'New Post';
         break;
       case 'edit':
-        // something
+        const blogId = +ctx.query.blogId;
+        ctx.assert(Number.isSafeInteger(blogId));
         break;
       case undefined:
-        // something
         data.headerTitle = 'Posts';
         data.posts = [
           {
