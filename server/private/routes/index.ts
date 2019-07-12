@@ -1,4 +1,4 @@
-import Router from './Router';
+import Router from './../../src/Router';
 import AdminRouter from './AdminRouter';
 
 const routes: Router[] = [new AdminRouter()];

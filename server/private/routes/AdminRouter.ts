@@ -1,16 +1,14 @@
 import Koa from 'koa';
 import { promises as fs } from 'fs';
 import bcrypt from 'bcrypt';
-import Router from './Router';
+import Router from '../../src/Router';
 import AdminAPIRouter from './api/AdminAPIRouter';
 import { random_id } from '../../util/fns';
 import _fs from 'fs';
-import koaStatic from 'koa-static';
-import path from 'path';
 
 const log = console.log;
 const BASE_TITLE = ' - Admin';
-const TEN_MINS_IN_MS = 100000; // ten mins for now to dev...
+const TEN_MINS_IN_MS = 10000; // ten mins for now to dev...
 const SALT_ROUNDS = 10;
 
 const is_valid_password = (pass: string) =>
@@ -28,24 +26,19 @@ type AdminRegisterParameters = {
 
 export default class AdminRouter extends Router {
   private readonly sessionCookieName = 'easy-blog-admin:sess';
+  private readonly sessionConfig = {
+    httpOnly: true,
+    signed: true,
+    maxAge: TEN_MINS_IN_MS
+  };
 
   constructor() {
-    super({
-      routerPrefix: '/admin',
-      templatePath: 'private',
-      assetsPath: 'private'
-    });
+    super({ templatePath: 'private' });
 
     const apiRouter = new AdminAPIRouter();
 
     this.instance
       .get('login', ctx => this.send_login_page(ctx))
-      .use(
-        koaStatic('/assets/private', {
-          maxAge: TEN_MINS_IN_MS,
-          defer: false
-        })
-      )
       .post('login', ctx => this.login_user(ctx))
       .post('register', ctx => this.register_user(ctx))
       .use(async (ctx, next) => {
@@ -56,7 +49,6 @@ export default class AdminRouter extends Router {
           ctx.redirect('login'); // tried to reach protected endpoints w/o valid cookie
         }
       })
-
       .get('home', ctx => this.send_home_page(ctx))
       .get('posts', ctx => this.send_posts_page(ctx))
       .post('reset-templates', ctx => this.refresh_templates(ctx))
@@ -91,11 +83,7 @@ export default class AdminRouter extends Router {
     const isMatchingPassword = await bcrypt.compare(loginPassword, password);
 
     if (isUser && isMatchingPassword) {
-      ctx.cookies.set(this.sessionCookieName, random_id(), {
-        httpOnly: true,
-        signed: true,
-        maxAge: TEN_MINS_IN_MS
-      });
+      ctx.cookies.set(this.sessionCookieName, random_id(), this.sessionConfig);
       ctx.redirect('home');
     } else {
       ctx.method = 'GET';
@@ -115,18 +103,14 @@ export default class AdminRouter extends Router {
       'Password must be between 2 and 55 characters'
     );
 
-    ctx.cookies.set(this.sessionCookieName, random_id(), {
-      httpOnly: true,
-      signed: true,
-      maxAge: TEN_MINS_IN_MS
-    });
-
     const hash = await bcrypt.hash(registerPassword, SALT_ROUNDS);
 
     await fs.writeFile(
       'users.json',
       JSON.stringify({ username: registerUsername, password: hash })
     );
+
+    ctx.cookies.set(this.sessionCookieName, random_id(), this.sessionConfig);
 
     ctx.redirect('home');
   }

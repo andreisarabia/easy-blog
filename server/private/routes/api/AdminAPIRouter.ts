@@ -1,5 +1,5 @@
 import Koa from 'koa';
-import Router from './../Router';
+import Router from '../../../src/Router';
 import BlogPost from '../../models/BlogPost';
 
 type BlogPostParameters = {
@@ -7,11 +7,11 @@ type BlogPostParameters = {
   author: string;
   timestamp: Date;
   content: string;
-}; 
+};
 
 export default class AdminAPIRouter extends Router {
   constructor() {
-    super({ routerPrefix: 'api' });
+    super({ prefix: 'api/' });
 
     this.instance
       .put('posts', ctx => this.create_post(ctx))
