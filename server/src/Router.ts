@@ -38,9 +38,8 @@ export default class Router {
   // when templates are in cache, we replace each entry with
   // a refreshed read of its file
   protected async refresh_template_cache(): Promise<void> {
-    const start = Date.now();
-
-    const refresh_templates = async () => {
+    if (this.cachedTemplates.size === 0 || !this.isRefreshingCache) {
+      const start = Date.now();
       this.isRefreshingCache = true;
       for await (const filePath of read_dir_recursively(this.templatePath)) {
         const { dir } = path.parse(filePath);
@@ -51,10 +50,6 @@ export default class Router {
         );
       }
       this.isRefreshingCache = false;
-    };
-
-    if (this.cachedTemplates.size === 0 || !this.isRefreshingCache) {
-      await refresh_templates();
       log(`${Date.now() - start}ms to load templates in ${this.templatePath}`);
     }
   }
@@ -66,7 +61,7 @@ export default class Router {
       if (path.includes('.*')) continue;
       if (this.pathMap.has(path)) {
         const savedPaths = this.pathMap.get(path);
-        this.pathMap.set(path, [...savedPaths, ...methods]);
+        this.pathMap.set(path, methods.concat(savedPaths));
       } else {
         this.pathMap.set(path, methods);
       }
