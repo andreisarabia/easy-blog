@@ -6,8 +6,6 @@ import { read_dir_recursively } from '../util/fns';
 
 const log = console.log;
 
-const TEN_SECONDS_IN_MS = 10000;
-
 type RouterOptions = {
   templatePath?: string;
   prefix?: string;
@@ -19,7 +17,7 @@ export default class Router {
   private cachedTemplates: Map<string, Promise<string>>; // we don't initialize caching templates, so any router child can be API-only
   private templatePath: string;
 
-  constructor({ templatePath, prefix = '/' }: RouterOptions) {
+  protected constructor({ templatePath, prefix = '/' }: RouterOptions) {
     if (templatePath) {
       this.templatePath = `templates${path.sep}${templatePath}`;
       this.refresh_template_cache();
