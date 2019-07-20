@@ -5,6 +5,10 @@ const is_str_arr = (val: any[]) => is_arr(val) && val.every(is_str);
 const is_fn_arr = (val: any[]) => is_arr(val) && val.every(is_fn);
 const is_truthy = (val: any) => Boolean(val);
 const filter_out_falsey = (val: any[]) => val.filter(is_truthy);
+const generate_random_int = (min: number, max: number) => {
+  min = Math.ceil(min);
+  return Math.floor(Math.random() * (Math.floor(max) - min)) + min;
+};
 
 export {
   is_str,
@@ -13,5 +17,6 @@ export {
   is_fn_arr,
   is_str_arr,
   is_truthy,
-  filter_out_falsey
+  filter_out_falsey,
+  generate_random_int
 };

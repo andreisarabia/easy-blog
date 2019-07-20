@@ -1,30 +1,78 @@
-// const { Quill } = require('quill');
-const log = console.log;
+(() => {
+  // const { Quill } = require('quill');
+  const defaultHeaders = {
+    'csrf-token': document.head.querySelector('meta[name="_csrf"]').content
+    // 'content-type': 'application/json'
+  };
+  const rootEl = document.body;
+  const log = console.log;
+  const submitContentBtn = rootEl.querySelector(
+    'button[name="submit-content"]'
+  );
+  const editor = new Quill('#editor', {
+    theme: 'snow'
+  });
+  const editorData = { content: '' };
+  let savedData = null;
 
-const editor = new Quill('#editor', {
-  theme: 'snow'
-});
+  const save_editor_data = async () => {
+    const res = await fetch('api/posts', {
+      method: 'PUT',
+      headers: {
+        ...defaultHeaders,
+        'Content-type': 'application/json'
+      },
+      body: JSON.stringify(editorData)
+    });
+    savedData = await res.json();
 
-editor.on('text-change', (delta, oldDelta, source) => {
-  const { ops } = editor.getContents();
-  let htmlStr = '';
+    log(savedData);
 
-  for (const { insert, attributes } of ops) {
-    const wrapperDiv = document.createElement('div');
-    if (attributes) {
-      if (attributes.bold === true) {
-        const b = document.createElement('b');
-        wrapperDiv.append(b);
+    await get_editor_data();
+  };
+
+  const get_editor_data = async () => {
+    const res = await fetch(`api/posts/${savedData.id}`, {
+      method: 'GET',
+      headers: { ...defaultHeaders }
+    });
+
+    log(res);
+  };
+
+  editor.on('text-change', (delta, oldDelta, source) => {
+    const parentEl = document.createElement('div');
+
+    for (const { insert, attributes } of editor.getContents().ops) {
+      if (typeof insert !== 'string' || insert === '\n') continue;
+
+      const wrapperSpan = document.createElement('span');
+
+      if (typeof attributes === 'object') {
+        if (attributes.bold) {
+          wrapperSpan.style.fontWeight = '700';
+        }
+
+        if (attributes.italic) {
+          wrapperSpan.style.fontStyle = 'italic';
+        }
+
+        if (attributes.color) {
+          wrapperSpan.style.color = attributes.color;
+        }
       }
 
-      if (typeof attributes.color === 'string') {
-        wrapperDiv.style.color = attributes.color;
-      }
+      wrapperSpan.innerText = insert;
+
+      parentEl.appendChild(wrapperSpan);
+
+      log(parentEl.innerHTML);
     }
-    wrapperDiv.innerHTML = insert;
-    htmlStr += wrapperDiv.innerHTML;
-    log(wrapperDiv);
-  }
-});
 
-log(editor);
+    log(editor.getContents());
+
+    editorData.content = parentEl.innerHTML;
+  });
+
+  submitContentBtn.onclick = e => save_editor_data();
+})();

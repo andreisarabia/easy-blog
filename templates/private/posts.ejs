@@ -23,8 +23,8 @@
       <div class="post">
         <h3><%= post.id %></h3>
         <h3><%= post.name %></h3>
-        <h3><%= post.snippet %></h3>
-        <h3><%= post.date %></h3>
+        <div><%- post.snippet %></div>
+        <h3><%= post.date.toLocaleString() %></h3>
       </div>
       <% }) %>
     </div>
@@ -32,7 +32,10 @@
     <link rel="stylesheet" href="css/quill.core.css" />
     <link rel="stylesheet" href="css/quill.snow.css" />
 
-    <div id="editor"></div>
+    <div class="posts-editor">
+      <div id="editor"></div>
+      <button type="button" name="submit-content">Submit Content</button>
+    </div>
 
     <script src="js/quill.core.js" defer></script>
     <script src="js/editor.js" defer></script>

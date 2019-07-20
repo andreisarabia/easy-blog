@@ -12,7 +12,8 @@ export default class AdminApplication {
   private readonly contentSecurityPolicy = Object.entries({
     'default-src': ['self'],
     'script-src': ['self', 'unsafe-inline'],
-    'style-src': ['self', 'unsafe-inline']
+    'style-src': ['self', 'unsafe-inline'],
+    'connect-src': ['self']
   });
 
   constructor() {

@@ -3,6 +3,7 @@ import { promises as fs } from 'fs';
 import bcrypt from 'bcrypt';
 import Router from '../../src/Router';
 import AdminAPIRouter from './api/AdminAPIRouter';
+import BlogPost from '../models/BlogPost';
 import { random_id } from '../../util/fns';
 
 const log = console.log;
@@ -38,6 +39,7 @@ export default class AdminRouter extends Router {
     signed: true,
     maxAge: process.env.NODE_END !== 'production' ? undefined : ONE_DAY_IN_MS // koaSession will default to 'session'
   };
+  private readonly blogCache: Map<number, BlogPost>;
 
   constructor() {
     super({ templatePath: 'private' });
@@ -61,6 +63,8 @@ export default class AdminRouter extends Router {
       .post('reset-templates', ctx => this.refresh_templates(ctx))
       .use(apiRouter.middleware.routes())
       .use(apiRouter.middleware.allowedMethods());
+
+    this.blogCache = apiRouter.blogCache;
 
     log('Admin paths:', this.allPaths);
   }
@@ -137,28 +141,26 @@ export default class AdminRouter extends Router {
       case 'new':
         data.headerTitle = 'New Post';
         data.editor = true;
-        break;
+        break; 
       case 'edit':
-        const blogId = +ctx.query.blogId;
+        const blogId = +ctx.query.blogId; 
         ctx.assert(Number.isSafeInteger(blogId));
         data.editor = true;
         break;
       case undefined:
         data.headerTitle = 'Posts';
-        data.posts = [
-          {
-            id: 1,
-            name: 'dre sar',
-            snippet: '... here i was',
-            date: new Date()
-          },
-          {
-            id: 2,
-            name: 'sar dreee',
-            snippet: 'there i go...',
-            date: new Date()
-          }
-        ];
+
+        data.posts = [...this.blogCache.values()]
+          .slice(0, 10)
+          .map(blogPost => ({
+            id: blogPost.uniqueId,
+            name: blogPost.author,
+            date: blogPost.savedDate,
+            snippet: blogPost.postContent
+          }));
+
+        log(data.posts);
+        log(this.blogCache);
         break;
       default:
         ctx.redirect('back');
