@@ -27,6 +27,7 @@ type AdminBlogPostParameters = {
 type AdminBlogPostActionData = {
   headerTitle: string;
   posts: object[];
+  editor: boolean;
 };
 type AdminBlogPostActions = 'new' | 'edit';
 
@@ -124,15 +125,23 @@ export default class AdminRouter extends Router {
 
   private async send_posts_page(ctx: Koa.ParameterizedContext): Promise<void> {
     const { action } = ctx.query as AdminBlogPostParameters;
-    const data: AdminBlogPostActionData = { headerTitle: '', posts: null };
+    const data: AdminBlogPostActionData = {
+      headerTitle: '',
+      posts: null,
+      editor: false
+    };
+
+    log(action);
 
     switch (action) {
       case 'new':
         data.headerTitle = 'New Post';
+        data.editor = true;
         break;
       case 'edit':
         const blogId = +ctx.query.blogId;
         ctx.assert(Number.isSafeInteger(blogId));
+        data.editor = true;
         break;
       case undefined:
         data.headerTitle = 'Posts';

@@ -2,6 +2,12 @@
   <div id="posts-header">
     <div class="post-header">
       <h2><%= headerTitle %></h2>
+      <% if (posts) { %>
+      <form action="posts" method="GET">
+        <input type="hidden" name="action" value="new" />
+        <button>New</button>
+      </form>
+      <% } %>
     </div>
   </div>
   <div id="posts-summary">
@@ -22,6 +28,14 @@
       </div>
       <% }) %>
     </div>
+    <% } else if (editor) { %>
+    <link rel="stylesheet" href="css/quill.core.css" />
+    <link rel="stylesheet" href="css/quill.snow.css" />
+
+    <div id="editor"></div>
+
+    <script src="js/quill.core.js" defer></script>
+    <script src="js/editor.js" defer></script>
     <% } %>
   </div>
   <style>
@@ -29,6 +43,11 @@
     div.post {
       display: grid;
       grid-template-columns: repeat(4, 1fr);
+    }
+    div.post-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
     }
   </style>
 </section>
