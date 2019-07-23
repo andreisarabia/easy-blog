@@ -5,16 +5,17 @@ import koaStatic from 'koa-static';
 import AdminRouter from './routes/AdminRouter';
 import { is_url } from '../util/fns';
 
+const ADMIN_ASSETS_PATH = 'templates/private/assets';
 const log = console.log;
 
 export default class AdminApplication {
   private app = new Koa();
-  private readonly contentSecurityPolicy = Object.entries({
+  private readonly contentSecurityPolicy = {
     'default-src': ['self'],
     'script-src': ['self', 'unsafe-inline'],
     'style-src': ['self', 'unsafe-inline'],
     'connect-src': ['self']
-  });
+  };
 
   constructor() {
     this.setup_middlewares();
@@ -26,7 +27,7 @@ export default class AdminApplication {
 
   private setup_middlewares(): void {
     const adminRouter = new AdminRouter();
-    const cspDirectives = this.contentSecurityPolicy.reduce(
+    const cspDirectives = Object.entries(this.contentSecurityPolicy).reduce(
       (cspString, [src, directives]) => {
         const preppedDirectives = directives
           .map(directive =>
@@ -71,6 +72,6 @@ export default class AdminApplication {
       })
       .use(adminRouter.middleware.routes())
       .use(adminRouter.middleware.allowedMethods())
-      .use(koaStatic('assets/private', { defer: true }));
+      .use(koaStatic(ADMIN_ASSETS_PATH, { defer: true }));
   }
 }

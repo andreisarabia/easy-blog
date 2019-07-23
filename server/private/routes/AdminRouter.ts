@@ -141,9 +141,9 @@ export default class AdminRouter extends Router {
       case 'new':
         data.headerTitle = 'New Post';
         data.editor = true;
-        break; 
+        break;
       case 'edit':
-        const blogId = +ctx.query.blogId; 
+        const blogId = +ctx.query.blogId;
         ctx.assert(Number.isSafeInteger(blogId));
         data.editor = true;
         break;
@@ -155,8 +155,8 @@ export default class AdminRouter extends Router {
           .map(blogPost => ({
             id: blogPost.uniqueId,
             name: blogPost.author,
-            date: blogPost.savedDate,
-            snippet: blogPost.postContent
+            date: blogPost.datePublished,
+            snippet: blogPost.content
           }));
 
         log(data.posts);

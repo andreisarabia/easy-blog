@@ -5,14 +5,16 @@ type BlogPostParameters = {
   id?: number;
   authorName: string;
   timestamp: Date;
-  content: string;
+  htmlContent: string;
+  rawData?: object;
 };
 
 export default class BlogPost extends Model {
   private id: number;
   private authorName: string;
   private timestamp: Date;
-  private content: string;
+  private htmlContent: string;
+  private rawData: object;
 
   constructor(props: BlogPostParameters) {
     super();
@@ -20,7 +22,8 @@ export default class BlogPost extends Model {
     this.id = props.id || generate_random_int(0, 1500000);
     this.authorName = props.authorName;
     this.timestamp = props.timestamp;
-    this.content = props.content;
+    this.htmlContent = props.htmlContent;
+    this.rawData = props.rawData;
   }
 
   public get uniqueId(): number {
@@ -31,20 +34,15 @@ export default class BlogPost extends Model {
     return this.authorName;
   }
 
-  public get savedDate(): Date {
+  public get datePublished(): Date {
     return this.timestamp;
   }
 
-  public get postContent(): string {
-    return this.content;
+  public get content(): string {
+    return this.htmlContent;
   }
 
-  public get savedData(): object {
-    return {
-      id: this.id,
-      author: this.authorName,
-      timestamp: this.timestamp,
-      content: this.content
-    };
+  public get data(): object {
+    return this.rawData;
   }
 }

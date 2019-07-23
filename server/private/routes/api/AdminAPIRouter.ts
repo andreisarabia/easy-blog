@@ -5,7 +5,8 @@ import BlogPost from '../../models/BlogPost';
 type BlogPostParameters = {
   id: string;
   authorName: string;
-  content: string;
+  htmlContent: string;
+  rawQuillData: object;
 };
 
 export default class AdminAPIRouter extends Router {
@@ -16,33 +17,31 @@ export default class AdminAPIRouter extends Router {
 
     this.instance
       .put('posts', ctx => this.create_post(ctx))
-      .get('posts/:id', ctx => this.send_blog_post_data(ctx))
+      .get('posts/:id', ctx => this.send_blog_data(ctx))
       .post('posts/:id', ctx => this.act_on_post(ctx));
   }
 
   private async create_post(ctx: Koa.ParameterizedContext): Promise<void> {
-    const { authorName, content } = ctx.request.body as BlogPostParameters;
+    const { authorName, htmlContent, rawQuillData } = ctx.request
+      .body as BlogPostParameters;
     const blogPost = new BlogPost({
       authorName,
-      content,
+      htmlContent,
       timestamp: new Date()
     });
 
     this.blogCache.set(blogPost.uniqueId, blogPost);
-    console.log(this.blogCache.get(blogPost.uniqueId));
 
-    ctx.body = { id: blogPost.uniqueId, content };
+    ctx.body = { id: blogPost.uniqueId, htmlContent };
   }
 
-  private async send_blog_post_data(
-    ctx: Koa.ParameterizedContext
-  ): Promise<void> {
+  private async send_blog_data(ctx: Koa.ParameterizedContext): Promise<void> {
     const { id } = ctx.params;
     const blogPost = this.blogCache.get(+id);
 
     console.log(blogPost);
 
-    ctx.body = { content: blogPost.savedData };
+    ctx.body = { content: blogPost.data };
   }
 
   private async act_on_post(ctx: Koa.ParameterizedContext): Promise<void> {

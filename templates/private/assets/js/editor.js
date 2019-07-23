@@ -2,17 +2,15 @@
   // const { Quill } = require('quill');
   const defaultHeaders = {
     'csrf-token': document.head.querySelector('meta[name="_csrf"]').content
-    // 'content-type': 'application/json'
   };
   const rootEl = document.body;
-  const log = console.log;
   const submitContentBtn = rootEl.querySelector(
     'button[name="submit-content"]'
   );
-  const editor = new Quill('#editor', {
-    theme: 'snow'
-  });
-  const editorData = { content: '' };
+  const editor = new Quill('#editor', { theme: 'snow' });
+  const editorData = { htmlContent: '', rawQuillData: null };
+  const log = console.log;
+
   let savedData = null;
 
   const save_editor_data = async () => {
@@ -26,8 +24,6 @@
     });
     savedData = await res.json();
 
-    log(savedData);
-
     await get_editor_data();
   };
 
@@ -36,14 +32,21 @@
       method: 'GET',
       headers: { ...defaultHeaders }
     });
+    const data = await res.json();
+
+    const { content } = editorData.htmlContent;
 
     log(res);
   };
 
   editor.on('text-change', (delta, oldDelta, source) => {
     const parentEl = document.createElement('div');
+    const quillChanges = editor.getContents().ops;
+    
+    log(delta);
+    log(editor.getContents().ops);
 
-    for (const { insert, attributes } of editor.getContents().ops) {
+    for (const { insert, attributes } of quillChanges) {
       if (typeof insert !== 'string' || insert === '\n') continue;
 
       const wrapperSpan = document.createElement('span');
@@ -65,13 +68,10 @@
       wrapperSpan.innerText = insert;
 
       parentEl.appendChild(wrapperSpan);
-
-      log(parentEl.innerHTML);
     }
 
-    log(editor.getContents());
-
-    editorData.content = parentEl.innerHTML;
+    editorData.htmlContent = parentEl.innerHTML;
+    editorData.rawQuillData = { ...quillChanges };
   });
 
   submitContentBtn.onclick = e => save_editor_data();
