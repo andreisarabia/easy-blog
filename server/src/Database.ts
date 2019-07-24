@@ -1,9 +1,3 @@
-import * as mysql from 'mysql';
-
-class Database {
-  private connection: mysql.Connection;
-
+export default class Database {
   public async query(sql: string, params?: any[], mapCb?: () => any) {}
 }
-
-export default Database;
