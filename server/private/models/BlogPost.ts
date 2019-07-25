@@ -17,7 +17,7 @@ export default class BlogPost extends Model {
   private rawData: object;
 
   constructor(props: BlogPostParameters) {
-    super();
+    super('blog_posts');
 
     this.id = props.id || generate_random_int(0, 1500000);
     this.authorName = props.authorName;
