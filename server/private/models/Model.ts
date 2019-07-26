@@ -1,4 +1,10 @@
-import { MongoClient, Collection, Db } from 'mongodb';
+import {
+  MongoClient,
+  Collection,
+  Db,
+  InsertOneWriteOpResult,
+  InsertWriteOpResult
+} from 'mongodb';
 
 const databaseName: string | undefined = process.env.MONGO_DB_NAME || '';
 const uri: string | undefined = process.env.MONGO_URI || '';
@@ -24,14 +30,27 @@ export default class Model {
     });
   }
 
-  protected async insert(...a: object[]): Promise<void> {
-    const collection = await this.databaseCollection;
+  private async reset_connection() {
+    await this.dbClient.close();
+  }
 
-    const result: InsertOneWriteOpResult | InsertWriteOpResult =
-      a.length === 1
-        ? await collection.insertOne(a)
-        : await collection.insertMany(a);
+  protected async insert(
+    dataObjs: object[],
+    { extraInfoToReturn }: { extraInfoToReturn?: string[] }
+  ): Promise<[Error, object[]]> {
+    try {
+      const collection = await this.databaseCollection;
 
-      
+      const result: InsertOneWriteOpResult | InsertWriteOpResult =
+        dataObjs.length === 1
+          ? await collection.insertOne(dataObjs)
+          : await collection.insertMany(dataObjs);
+
+      await this.reset_connection();
+
+      return [null, result.ops];
+    } catch (error) {
+      return error instanceof Error ? [error, null] : [new Error(error), null];
+    }
   }
 }
