@@ -2,7 +2,7 @@ import Model from './Model';
 import { generate_random_int } from '../../util/primitives';
 
 type BlogPostParameters = {
-  id?: number;
+  title: string;
   authorName: string;
   timestamp: Date;
   htmlContent: string;
@@ -10,7 +10,7 @@ type BlogPostParameters = {
 };
 
 export default class BlogPost extends Model {
-  private id: number;
+  private title: string;
   private authorName: string;
   private timestamp: Date;
   private htmlContent: string;
@@ -19,15 +19,15 @@ export default class BlogPost extends Model {
   constructor(props: BlogPostParameters) {
     super('blog_posts');
 
-    this.id = props.id || generate_random_int(0, 1500000);
+    this.title = props.title;
     this.authorName = props.authorName;
     this.timestamp = props.timestamp;
     this.htmlContent = props.htmlContent;
     this.rawData = props.rawData;
   }
 
-  public get uniqueId(): number {
-    return this.id;
+  public get postTitle(): string {
+    return this.title;
   }
 
   public get author(): string {

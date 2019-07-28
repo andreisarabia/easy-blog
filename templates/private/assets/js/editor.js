@@ -8,12 +8,14 @@
     'button[name="submit-content"]'
   );
   const editor = new Quill('#editor', { theme: 'snow' });
-  const editorData = { htmlContent: '', rawQuillData: null };
+  const editorData = { htmlContent: '', rawQuillData: null, title: '' };
   const log = console.log;
 
   let savedData = null;
 
   const save_editor_data = async () => {
+    editorData.title = rootEl.querySelector('input[name="post-title"]').value;
+
     const res = await fetch('api/posts', {
       method: 'PUT',
       headers: {
@@ -42,7 +44,7 @@
   editor.on('text-change', (delta, oldDelta, source) => {
     const parentEl = document.createElement('div');
     const quillChanges = editor.getContents().ops;
-    
+
     log(delta);
     log(editor.getContents().ops);
 

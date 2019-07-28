@@ -3,14 +3,14 @@ import Router from '../../../src/Router';
 import BlogPost from '../../models/BlogPost';
 
 type BlogPostParameters = {
-  id: string;
+  title: string;
   authorName: string;
   htmlContent: string;
   rawQuillData: object;
 };
 
 export default class AdminAPIRouter extends Router {
-  public blogCache: Map<number, BlogPost> = new Map();
+  public blogCache: Map<string, BlogPost> = new Map();
 
   constructor() {
     super({ prefix: 'api/' });
@@ -18,26 +18,29 @@ export default class AdminAPIRouter extends Router {
     this.instance
       .put('posts', ctx => this.create_post(ctx))
       .get('posts/:id', ctx => this.send_blog_data(ctx))
-      .post('posts/:id', ctx => this.act_on_post(ctx));
+      .post('posts/:id', ctx => this.act_on_post(ctx))
+      .post('reset-templates', ctx => this.refresh_templates(ctx));
   }
 
   private async create_post(ctx: Koa.ParameterizedContext): Promise<void> {
-    const { authorName, htmlContent, rawQuillData } = ctx.request
+    const { title, authorName, htmlContent, rawQuillData } = ctx.request
       .body as BlogPostParameters;
     const blogPost = new BlogPost({
+      title,
       authorName,
       htmlContent,
+      rawData: rawQuillData,
       timestamp: new Date()
     });
 
-    this.blogCache.set(blogPost.uniqueId, blogPost);
+    this.blogCache.set(blogPost.postTitle, blogPost);
 
-    ctx.body = { id: blogPost.uniqueId, htmlContent };
+    ctx.body = { id: blogPost.postTitle, htmlContent };
   }
 
   private async send_blog_data(ctx: Koa.ParameterizedContext): Promise<void> {
     const { id } = ctx.params;
-    const blogPost = this.blogCache.get(+id);
+    const blogPost = this.blogCache.get(id);
 
     console.log(blogPost);
 
@@ -46,5 +49,12 @@ export default class AdminAPIRouter extends Router {
 
   private async act_on_post(ctx: Koa.ParameterizedContext): Promise<void> {
     const { action } = ctx.request.body;
+  }
+
+  private async refresh_templates(
+    ctx: Koa.ParameterizedContext
+  ): Promise<void> {
+    await super.refresh_template_cache();
+    ctx.body = { msg: 'ok' };
   }
 }
