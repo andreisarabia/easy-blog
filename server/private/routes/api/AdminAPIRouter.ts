@@ -25,26 +25,28 @@ export default class AdminAPIRouter extends Router {
   private async create_post(ctx: Koa.ParameterizedContext): Promise<void> {
     const { title, authorName, htmlContent, rawQuillData } = ctx.request
       .body as BlogPostParameters;
-    const blogPost = new BlogPost({
+    const blogPost = await new BlogPost({
       title,
-      authorName,
+      author: authorName,
       htmlContent,
-      rawData: rawQuillData,
+      quillData: rawQuillData,
       timestamp: new Date()
-    });
+    }).save();
 
-    this.blogCache.set(blogPost.postTitle, blogPost);
+    this.blogCache.set(blogPost.id, blogPost);
 
-    ctx.body = { id: blogPost.postTitle, htmlContent };
+    console.log(blogPost);
+
+    ctx.body = { id: blogPost.id, htmlContent };
   }
 
   private async send_blog_data(ctx: Koa.ParameterizedContext): Promise<void> {
     const { id } = ctx.params;
-    const blogPost = this.blogCache.get(id);
+    const blogPost = this.blogCache.get(id) || {};
 
     console.log(blogPost);
 
-    ctx.body = { content: blogPost.data };
+    ctx.body = { content: blogPost.info };
   }
 
   private async act_on_post(ctx: Koa.ParameterizedContext): Promise<void> {

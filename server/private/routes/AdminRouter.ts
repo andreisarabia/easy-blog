@@ -156,7 +156,7 @@ export default class AdminRouter extends Router {
             title: blogPost.postTitle,
             name: blogPost.author,
             date: blogPost.datePublished,
-            snippet: blogPost.content
+            snippet: blogPost.htmlContent
           }));
 
         log(data.posts);
