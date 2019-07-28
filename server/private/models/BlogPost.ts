@@ -7,33 +7,23 @@ type BlogPostParameters = {
   timestamp: Date;
   htmlContent: string;
   quillData?: object;
+  uniqueId?: string;
 };
 
 export default class BlogPost extends Model {
-  private title: string;
-  private authorName: string;
-  private timestamp: Date;
-  private html: string;
-  private quillData: object;
-  private uniqueId: string;
+  protected props: BlogPostParameters = {};
 
   constructor(props: BlogPostParameters) {
-    super('blog_posts');
-
-    this.title = props.title;
-    this.authorName = props.author;
-    this.timestamp = props.timestamp;
-    this.html = props.htmlContent;
-    this.quillData = props.quillData;
+    super('blog_posts', props);
   }
 
   private get props(): object {
     return {
-      title: this.title,
-      author: this.authorName,
-      timestamp: this.timestamp,
-      html: this.html,
-      quillData: { ...this.quillData }
+      title: this.props.title,
+      author: this.props.author,
+      timestamp: this.props.timestamp,
+      html: this.props.htmlContent,
+      quillData: { ...this.props.quillData }
     };
   }
 
@@ -42,31 +32,27 @@ export default class BlogPost extends Model {
   }
 
   public get id(): string {
-    return this.uniqueId;
+    return this.props.uniqueId;
   }
 
   public set id(value: string) {
-    this.uniqueId = value;
+    this.props.uniqueId = value;
   }
 
   public get postTitle(): string {
-    return this.title;
+    return this.props.title;
   }
 
   public get author(): string {
-    return this.authorName;
+    return this.props.author;
   }
 
   public get datePublished(): Date {
-    return this.timestamp;
+    return this.props.timestamp;
   }
 
-  public get htmlContent(): string {
-    return this.html;
-  }
-
-  public get rawData(): object {
-    return { ...this.quillData };
+  public get html(): string {
+    return this.props.htmlContent;
   }
 
   public async save(): Promise<BlogPost> {

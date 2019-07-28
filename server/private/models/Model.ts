@@ -18,11 +18,15 @@ type ExtraReturnOptions = {
 
 export default class Model {
   private dbClient: MongoClient = new MongoClient(uri);
-  protected dbCollectionName: string;
   private db: Db;
+  protected dbCollectionName: string;
+  protected props: object = {};
 
-  constructor(dbCollectionName: string) {
+  constructor(dbCollectionName: string, props: object) {
     this.dbCollectionName = dbCollectionName;
+    this.props = props;
+
+    // for (const key in props) this.props[key] = props[key];
   }
 
   private get databaseCollection(): Promise<Collection> {
@@ -48,12 +52,12 @@ export default class Model {
     try {
       const collection = await this.databaseCollection;
       const result:
-        | InsertOneWriteOpResult
-        | InsertWriteOpResult = !Array.isArray(dataObjs)
-        ? await collection.insertOne(dataObjs)
-        : await collection.insertMany(dataObjs as any[]);
+        | InsertWriteOpResult
+        | InsertOneWriteOpResult = Array.isArray(dataObjs)
+        ? await collection.insertMany(dataObjs as any[])
+        : await collection.insertOne(dataObjs);
 
-      await this.reset_connection();
+      this.reset_connection();
 
       const resultToReturn: ExtraReturnOptions = {};
 
@@ -75,7 +79,11 @@ export default class Model {
 
       return [null, resultToReturn];
     } catch (error) {
-      return error instanceof Error ? [error, null] : [new Error(error), null];
+      return [error, null];
     }
+  }
+
+  public valueOf(): object {
+    return { ...this.props };
   }
 }
