@@ -37,9 +37,9 @@ export default class AdminRouter extends Router {
   private readonly sessionConfig = {
     httpOnly: true,
     signed: true,
-    maxAge: process.env.NODE_END !== 'production' ? undefined : ONE_DAY_IN_MS // koaSession will default to 'session'
+    maxAge: process.env.NODE_ENV !== 'production' ? undefined : ONE_DAY_IN_MS // koaSession will default to 'session'
   };
-  private readonly blogCache: Map<number, BlogPost>;
+  private readonly blogCache: Map<string, BlogPost>;
 
   constructor() {
     super({ templatePath: 'private' });
@@ -60,7 +60,6 @@ export default class AdminRouter extends Router {
       })
       .get('home', ctx => this.send_home_page(ctx))
       .get('posts', ctx => this.send_posts_page(ctx))
-      .post('reset-templates', ctx => this.refresh_templates(ctx))
       .use(apiRouter.middleware.routes())
       .use(apiRouter.middleware.allowedMethods());
 
@@ -152,11 +151,12 @@ export default class AdminRouter extends Router {
 
         data.posts = [...this.blogCache.values()]
           .slice(0, 10)
-          .map(blogPost => ({
-            id: blogPost.uniqueId,
+          .map((blogPost, i) => ({
+            id: i,
+            title: blogPost.postTitle,
             name: blogPost.author,
             date: blogPost.datePublished,
-            snippet: blogPost.content
+            snippet: blogPost.htmlContent
           }));
 
         log(data.posts);
@@ -167,12 +167,5 @@ export default class AdminRouter extends Router {
     }
 
     ctx.body = await super.render('posts.ejs', { ...data, csrf: ctx.csrf });
-  }
-
-  private async refresh_templates(
-    ctx: Koa.ParameterizedContext
-  ): Promise<void> {
-    await super.refresh_template_cache();
-    ctx.body = { msg: 'ok' };
   }
 }

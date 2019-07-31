@@ -1,37 +1,29 @@
-import { MongoClient, Collection, Db } from 'mongodb';
+import Database from '../../src/Database';
 
-const databaseName: string | undefined = process.env.MONGO_DB_NAME || '';
-const uri: string | undefined = process.env.MONGO_URI || '';
+type QueryResults = {
+  insertedId?: string;
+  insertedCount?: number;
+  ops?: object[];
+};
 
 export default class Model {
-  private dbClient: MongoClient = new MongoClient(uri);
-  protected dbCollectionName: string;
-  private db: Db;
+  private db: Database;
+  protected props: object;
 
-  constructor(dbCollectionName: string) {
-    this.dbCollectionName = dbCollectionName;
+  constructor(collection: string, props: object) {
+    this.db = new Database({ dbCollectionName: collection });
+    this.props = { ...props };
   }
 
-  private get databaseCollection(): Promise<Collection> {
-    return new Promise(async resolve => {
-      this.dbClient = await this.dbClient.connect();
-
-      if (!this.db) {
-        this.db = await this.dbClient.db(databaseName);
-      }
-
-      resolve(this.db.collection(this.dbCollectionName));
-    });
+  protected async save({
+    includeInResults
+  }?: {
+    includeInResults: ['insertedCount' | 'insertedId'];
+  }): Promise<[Error, QueryResults]> {
+    return await this.db.insert(this.props, includeInResults);
   }
 
-  protected async insert(...a: object[]): Promise<void> {
-    const collection = await this.databaseCollection;
-
-    const result: InsertOneWriteOpResult | InsertWriteOpResult =
-      a.length === 1
-        ? await collection.insertOne(a)
-        : await collection.insertMany(a);
-
-      
+  public valueOf(): object {
+    return this.props;
   }
 }

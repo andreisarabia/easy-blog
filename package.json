@@ -12,7 +12,6 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "@types/mongodb": "^3.1.30",
     "bcrypt": "^3.0.6",
     "dotenv": "^8.0.0",
     "ejs": "^2.6.2",
@@ -38,6 +37,7 @@
     "@types/koa-router": "^7.0.42",
     "@types/koa-session": "^5.10.1",
     "@types/koa-static": "^4.0.1",
+    "@types/mongodb": "^3.1.30",
     "@types/node": "^12.6.8",
     "@types/uuid": "^3.4.5",
     "cross-env": "^5.2.0",
