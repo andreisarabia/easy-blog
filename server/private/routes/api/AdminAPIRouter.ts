@@ -33,6 +33,10 @@ export default class AdminAPIRouter extends Router {
       timestamp: new Date()
     }).save();
 
+    if (this.blogCache.has(blogPost.penultimateId)) {
+      this.blogCache.delete(blogPost.penultimateId);
+    }
+
     this.blogCache.set(blogPost.id, blogPost);
 
     console.log(blogPost);

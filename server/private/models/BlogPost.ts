@@ -12,6 +12,7 @@ type BlogPostParameters = {
 
 export default class BlogPost extends Model {
   protected props: BlogPostParameters = {};
+  private previousId: string;
 
   constructor(props: BlogPostParameters) {
     super('blog_posts', props);
@@ -35,10 +36,6 @@ export default class BlogPost extends Model {
     return this.props.uniqueId;
   }
 
-  public set id(value: string) {
-    this.props.uniqueId = value;
-  }
-
   public get postTitle(): string {
     return this.props.title;
   }
@@ -55,12 +52,20 @@ export default class BlogPost extends Model {
     return this.props.htmlContent;
   }
 
+  public get penultimateId(): string {
+    return this.previousId;
+  }
+
   public async save(): Promise<BlogPost> {
-    const [error, results] = await super.insert(this.props, ['insertedId']);
+    const [error, results] = await super.save({
+      includeInResults: ['insertedId']
+    });
 
     if (error) throw error;
 
-    this.id = results.insertedId;
+    if (this.props.uniqueId) this.previousId = this.props.uniqueId;
+
+    this.props.uniqueId = results.insertedId;
 
     return this;
   }
