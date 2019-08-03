@@ -2,11 +2,17 @@ import Koa from 'koa';
 import Router from '../../../src/Router';
 import BlogPost from '../../models/BlogPost';
 
+const log = console.log;
+
 type BlogPostParameters = {
   title: string;
   authorName: string;
   htmlContent: string;
   rawQuillData: object;
+};
+
+type AdminBlogPostQueryParameters = {
+  action: '';
 };
 
 export default class AdminAPIRouter extends Router {
@@ -39,22 +45,22 @@ export default class AdminAPIRouter extends Router {
 
     this.blogCache.set(blogPost.id, blogPost);
 
-    console.log(blogPost);
+    log(blogPost);
 
     ctx.body = { id: blogPost.id, htmlContent };
   }
 
   private async send_blog_data(ctx: Koa.ParameterizedContext): Promise<void> {
     const { id } = ctx.params;
-    const blogPost = this.blogCache.get(id) || {};
+    const blogPost: BlogPost = this.blogCache.get(id);
 
-    console.log(blogPost);
+    log(blogPost);
 
     ctx.body = { content: blogPost.info };
   }
 
   private async act_on_post(ctx: Koa.ParameterizedContext): Promise<void> {
-    const { action } = ctx.request.body;
+    const { action } = ctx.request.body as AdminBlogPostQueryParameters;
   }
 
   private async refresh_templates(

@@ -1,7 +1,7 @@
 import Database from '../../src/Database';
 
 export default class Controller {
-  private db = Database;
+  private db: Database;
 
   constructor({ collection }: { collection: string }) {
     this.db = new Database({ dbCollectionName: collection });

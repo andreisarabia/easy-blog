@@ -11,21 +11,11 @@ type BlogPostParameters = {
 };
 
 export default class BlogPost extends Model {
-  protected props: BlogPostParameters = {};
+  protected props: BlogPostParameters;
   private previousId: string;
 
   constructor(props: BlogPostParameters) {
     super('blog_posts', props);
-  }
-
-  private get props(): object {
-    return {
-      title: this.props.title,
-      author: this.props.author,
-      timestamp: this.props.timestamp,
-      html: this.props.htmlContent,
-      quillData: { ...this.props.quillData }
-    };
   }
 
   public get info(): object {

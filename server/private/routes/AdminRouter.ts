@@ -7,7 +7,7 @@ import BlogPost from '../models/BlogPost';
 import { random_id } from '../../util/fns';
 
 const log = console.log;
-const BASE_TITLE = ' - Admin';
+const BASE_TITLE = '- Admin';
 const ONE_DAY_IN_MS = 86400;
 const SALT_ROUNDS = 10;
 
@@ -22,15 +22,14 @@ type AdminRegisterParameters = {
   registerUsername: string;
   registerPassword: string;
 };
-type AdminBlogPostParameters = {
-  action: AdminBlogPostActions;
+type AdminBlogPostQueryParameters = {
+  action: 'new' | 'edit';
 };
 type AdminBlogPostActionData = {
-  headerTitle: string;
+  title: string;
   posts: object[];
   editor: boolean;
 };
-type AdminBlogPostActions = 'new' | 'edit';
 
 export default class AdminRouter extends Router {
   private readonly sessionCookieName = 'easy-blog-admin:sess';
@@ -127,9 +126,9 @@ export default class AdminRouter extends Router {
   }
 
   private async send_posts_page(ctx: Koa.ParameterizedContext): Promise<void> {
-    const { action } = ctx.query as AdminBlogPostParameters;
+    const { action } = ctx.query as AdminBlogPostQueryParameters;
     const data: AdminBlogPostActionData = {
-      headerTitle: '',
+      title: '',
       posts: null,
       editor: false
     };
@@ -138,17 +137,17 @@ export default class AdminRouter extends Router {
 
     switch (action) {
       case 'new':
-        data.headerTitle = 'New Post';
+        data.title = `New Post ${BASE_TITLE}`;
         data.editor = true;
         break;
       case 'edit':
         const blogId = +ctx.query.blogId;
         ctx.assert(Number.isSafeInteger(blogId));
         data.editor = true;
+        data.title = `Edit Post ${BASE_TITLE}`;
         break;
       case undefined:
-        data.headerTitle = 'Posts';
-
+        data.title = `Posts ${BASE_TITLE}`;
         data.posts = [...this.blogCache.values()]
           .slice(0, 10)
           .map((blogPost, i) => ({
@@ -156,7 +155,7 @@ export default class AdminRouter extends Router {
             title: blogPost.postTitle,
             name: blogPost.author,
             date: blogPost.datePublished,
-            snippet: blogPost.htmlContent
+            snippet: blogPost.html
           }));
 
         log(data.posts);

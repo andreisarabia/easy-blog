@@ -7,8 +7,8 @@ import {
   ObjectID
 } from 'mongodb';
 
-const databaseName: string | undefined = process.env.MONGO_DB_NAME || '';
-const uri: string | undefined = process.env.MONGO_URI || '';
+const dbClient = new MongoClient(process.env.MONGO_URI || '');
+const dbMap: Map<string, Database> = new Map();
 
 type QueryResults = {
   insertedId?: string;
@@ -17,15 +17,21 @@ type QueryResults = {
 };
 
 export default class Database {
-  private dbClient: MongoClient = new MongoClient(uri);
   private dbCollection: Collection;
 
   constructor({ dbCollectionName = '' }: { dbCollectionName: string }) {
-    this.dbCollection = this.dbClient.db(dbCollectionName);
+    this.dbCollection = dbClient.db().collection(dbCollectionName);
+  }
+
+  public static instance(dbCollectionName: string): Database {
+    if (!dbMap.has(dbCollectionName)) {
+      dbMap.set(dbCollectionName, new Database({ dbCollectionName }));
+    }
+    return dbMap.get(dbCollectionName);
   }
 
   private async reset_connection() {
-    await this.dbClient.close();
+    await dbClient.close();
   }
 
   public async insert(
@@ -35,7 +41,8 @@ export default class Database {
     try {
       const result:
         | InsertWriteOpResult
-        | InsertOneWriteOpResult = Array.isArray(dataObjs)
+        | InsertOneWriteOpResult
+        | any = Array.isArray(dataObjs)
         ? await this.dbCollection.insertMany(dataObjs as any[])
         : await this.dbCollection.insertOne(dataObjs);
 
@@ -59,4 +66,6 @@ export default class Database {
       return [error, null];
     }
   }
+
+  public async find(documentCriteria: object, mapCb?: Function) {}
 }
