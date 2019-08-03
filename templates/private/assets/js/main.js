@@ -5,7 +5,7 @@
   };
 
   docRoot.querySelector('nav button#reset-cache').onclick = async e => {
-    const res = await fetch('api/reset-templates', {
+    const res = await fetch('reset-templates', {
       method: 'POST',
       headers: defaultHeaders
     });

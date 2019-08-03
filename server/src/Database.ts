@@ -7,7 +7,6 @@ import {
   ObjectID
 } from 'mongodb';
 
-const dbClient = new MongoClient(process.env.MONGO_URI || '');
 const dbMap: Map<string, Database> = new Map();
 
 type QueryResults = {
@@ -17,10 +16,26 @@ type QueryResults = {
 };
 
 export default class Database {
-  private dbCollection: Collection;
+  private static dbClient: Promise<MongoClient> = MongoClient.connect(
+    process.env.MONGO_URI || '',
+    { useNewUrlParser: true }
+  );
+  private collection: Collection;
+  private dbCollectionName: string;
 
   constructor({ dbCollectionName = '' }: { dbCollectionName: string }) {
-    this.dbCollection = dbClient.db().collection(dbCollectionName);
+    this.dbCollectionName = dbCollectionName;
+  }
+
+  private get dbCollection(): Promise<Collection> {
+    return new Promise(async resolve => {
+      if (!this.collection) {
+        const dbClient = await Database.dbClient;
+        this.collection = dbClient.db().collection(this.dbCollectionName);
+      }
+
+      resolve(this.collection);
+    });
   }
 
   public static instance(dbCollectionName: string): Database {
@@ -30,21 +45,18 @@ export default class Database {
     return dbMap.get(dbCollectionName);
   }
 
-  private async reset_connection() {
-    await dbClient.close();
-  }
-
   public async insert(
     dataObjs: object | object[],
     extraInfoToReturn?: ['insertedCount' | 'insertedId']
   ): Promise<[Error, QueryResults]> {
     try {
+      const collection = await this.dbCollection;
       const result:
         | InsertWriteOpResult
         | InsertOneWriteOpResult
         | any = Array.isArray(dataObjs)
-        ? await this.dbCollection.insertMany(dataObjs as any[])
-        : await this.dbCollection.insertOne(dataObjs);
+        ? await collection.insertMany(dataObjs as any[])
+        : await collection.insertOne(dataObjs);
 
       const resultToReturn: QueryResults = { ops: result.ops };
 
@@ -67,5 +79,12 @@ export default class Database {
     }
   }
 
-  public async find(documentCriteria: object, mapCb?: Function) {}
+  public async find(
+    documentCriteria: object = {},
+    mapCb?: Function
+  ): Promise<object[]> {
+    const collection = await this.dbCollection;
+
+    return await collection.find(documentCriteria).toArray();
+  }
 }

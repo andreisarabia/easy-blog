@@ -13,7 +13,7 @@
   <div id="posts-summary">
     <% if (posts) { %>
     <div id="posts-columns">
-      <h3>ID</h3>
+      <h3>Title</h3>
       <h3>Author</h3>
       <h3>Content</h3>
       <h3>Date</h3>
@@ -21,7 +21,7 @@
     <div id="posts">
       <% posts.forEach(post => { %>
       <div class="post">
-        <h3><%= post.id %></h3>
+        <h3><%= post.title %></h3>
         <h3><%= post.name %></h3>
         <div><%- post.snippet %></div>
         <h3><%= post.date.toLocaleString() %></h3>

@@ -3,6 +3,7 @@ import { promises as fs } from 'fs';
 import bcrypt from 'bcrypt';
 import Router from '../../src/Router';
 import AdminAPIRouter from './api/AdminAPIRouter';
+import BlogPostController from '../controllers/BlogPostController';
 import BlogPost from '../models/BlogPost';
 import { random_id } from '../../util/fns';
 
@@ -49,16 +50,15 @@ export default class AdminRouter extends Router {
       .get('login', ctx => this.send_login_page(ctx))
       .post('login', ctx => this.login_user(ctx))
       .post('register', ctx => this.register_user(ctx))
-      .use(async (ctx, next) => {
-        if (ctx.cookies.get(this.sessionCookieName)) {
-          await next();
-        } else {
-          ctx.method = 'GET';
-          ctx.redirect('login'); // tried to reach protected endpoints w/o valid cookie
-        }
-      })
+      .use(
+        (ctx, next) =>
+          ctx.cookies.get(this.sessionCookieName)
+            ? next()
+            : this.send_login_page(ctx) // tried to reach protected endpoints w/o valid cookie
+      )
       .get('home', ctx => this.send_home_page(ctx))
       .get('posts', ctx => this.send_posts_page(ctx))
+      .post('reset-templates', ctx => this.refresh_templates(ctx))
       .use(apiRouter.middleware.routes())
       .use(apiRouter.middleware.allowedMethods());
 
@@ -88,8 +88,8 @@ export default class AdminRouter extends Router {
       ctx.cookies.set(this.sessionCookieName, random_id(), this.sessionConfig);
       ctx.redirect('home');
     } else {
-      ctx.method = 'GET';
-      ctx.redirect('login');
+      ctx.status = 403;
+      await this.send_login_page(ctx);
     }
   }
 
@@ -133,8 +133,6 @@ export default class AdminRouter extends Router {
       editor: false
     };
 
-    log(action);
-
     switch (action) {
       case 'new':
         data.title = `New Post ${BASE_TITLE}`;
@@ -148,23 +146,34 @@ export default class AdminRouter extends Router {
         break;
       case undefined:
         data.title = `Posts ${BASE_TITLE}`;
+
+        // console.log(this.blogCache);
+
         data.posts = [...this.blogCache.values()]
           .slice(0, 10)
           .map((blogPost, i) => ({
-            id: i,
+            id: blogPost.id,
             title: blogPost.postTitle,
             name: blogPost.author,
             date: blogPost.datePublished,
             snippet: blogPost.html
           }));
-
-        log(data.posts);
-        log(this.blogCache);
         break;
       default:
         ctx.redirect('back');
     }
 
-    ctx.body = await super.render('posts.ejs', { ...data, csrf: ctx.csrf });
+    ctx.body = await super.render('posts.ejs', {
+      ...data,
+      headerTitle: data.title,
+      csrf: ctx.csrf
+    });
+  }
+
+  private async refresh_templates(
+    ctx: Koa.ParameterizedContext
+  ): Promise<void> {
+    await super.refresh_template_cache();
+    ctx.body = { msg: 'ok' };
   }
 }
