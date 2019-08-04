@@ -5,6 +5,7 @@ import Router from '../../src/Router';
 import AdminAPIRouter from './api/AdminAPIRouter';
 import BlogPostController from '../controllers/BlogPostController';
 import BlogPost from '../models/BlogPost';
+import AdminUser from '../models/AdminUser';
 import { random_id } from '../../util/fns';
 
 const log = console.log;
@@ -100,9 +101,11 @@ export default class AdminRouter extends Router {
       .body as AdminRegisterParameters;
 
     ctx.assert(
-      is_valid_password(registerPassword),
-      401,
-      'Password must be between 2 and 55 characters' // for now...
+      AdminUser.validate_registration_credentials(
+        registerUsername,
+        registerPassword
+      ),
+      401
     );
 
     const hash = await bcrypt.hash(registerPassword, SALT_ROUNDS);

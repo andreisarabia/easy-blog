@@ -8,6 +8,10 @@ import {
 } from 'mongodb';
 
 const dbMap: Map<string, Database> = new Map();
+const dbClient: Promise<MongoClient> = MongoClient.connect(
+  process.env.MONGO_URI || '',
+  { useNewUrlParser: true }
+);
 
 type QueryResults = {
   insertedId?: string;
@@ -16,10 +20,6 @@ type QueryResults = {
 };
 
 export default class Database {
-  private static dbClient: Promise<MongoClient> = MongoClient.connect(
-    process.env.MONGO_URI || '',
-    { useNewUrlParser: true }
-  );
   private collection: Collection;
   private dbCollectionName: string;
 
@@ -30,19 +30,12 @@ export default class Database {
   private get dbCollection(): Promise<Collection> {
     return new Promise(async resolve => {
       if (!this.collection) {
-        const dbClient = await Database.dbClient;
-        this.collection = dbClient.db().collection(this.dbCollectionName);
+        const client = await dbClient;
+        this.collection = client.db().collection(this.dbCollectionName);
       }
 
       resolve(this.collection);
     });
-  }
-
-  public static instance(dbCollectionName: string): Database {
-    if (!dbMap.has(dbCollectionName)) {
-      dbMap.set(dbCollectionName, new Database({ dbCollectionName }));
-    }
-    return dbMap.get(dbCollectionName);
   }
 
   public async insert(
@@ -86,5 +79,12 @@ export default class Database {
     const collection = await this.dbCollection;
 
     return await collection.find(documentCriteria).toArray();
+  }
+
+  public static instance(dbCollectionName: string): Database {
+    if (!dbMap.has(dbCollectionName)) {
+      dbMap.set(dbCollectionName, new Database({ dbCollectionName }));
+    }
+    return dbMap.get(dbCollectionName);
   }
 }
