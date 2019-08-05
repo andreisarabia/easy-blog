@@ -100,13 +100,12 @@ export default class AdminRouter extends Router {
     const { registerUsername, registerPassword } = ctx.request
       .body as AdminRegisterParameters;
 
-    ctx.assert(
-      AdminUser.validate_registration_credentials(
-        registerUsername,
-        registerPassword
-      ),
-      401
+    const [hasErr, ...errMsgs] = AdminUser.validate_registration_credentials(
+      registerUsername,
+      registerPassword
     );
+
+    if (hasErr) ctx.throw(errMsgs.join('\n'), 401);
 
     const hash = await bcrypt.hash(registerPassword, SALT_ROUNDS);
 
