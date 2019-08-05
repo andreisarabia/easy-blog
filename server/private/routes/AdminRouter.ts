@@ -1,9 +1,9 @@
 import Koa from 'koa';
+import uuid from 'uuid/v4';
 import Router from '../../src/Router';
 import AdminAPIRouter from './api/AdminAPIRouter';
 import BlogPost from '../models/BlogPost';
 import AdminUser from '../models/AdminUser';
-import { random_id } from '../../util/fns';
 
 const log = console.log;
 const BASE_TITLE = '- Admin';
@@ -43,6 +43,7 @@ export default class AdminRouter extends Router {
 
     this.instance
       .get('login', ctx => this.send_login_page(ctx))
+      .get('logout', ctx => this.logout_user(ctx))
       .post('login', ctx => this.login_user(ctx))
       .post('register', ctx => this.register_user(ctx))
       .use(
@@ -68,6 +69,11 @@ export default class AdminRouter extends Router {
     ctx.body = await super.render('login.ejs', { csrf: ctx.csrf });
   }
 
+  private async logout_user(ctx: Koa.ParameterizedContext): Promise<void> {
+    ctx.session = null;
+    ctx.redirect('login');
+  }
+
   private async login_user(ctx: Koa.ParameterizedContext): Promise<void> {
     if (ctx.cookies.get(this.sessionCookieName)) ctx.redirect('back', 'home'); // reached login/register page, logged in
 
@@ -83,7 +89,7 @@ export default class AdminRouter extends Router {
       ctx.status = 403;
       await this.send_login_page(ctx);
     } else {
-      ctx.cookies.set(this.sessionCookieName, random_id(), this.sessionConfig);
+      ctx.cookies.set(this.sessionCookieName, uuid(), this.sessionConfig);
       ctx.redirect('home');
     }
   }
@@ -102,7 +108,7 @@ export default class AdminRouter extends Router {
 
     if (err instanceof Error) ctx.throw(err.message, 401);
 
-    ctx.cookies.set(this.sessionCookieName, random_id(), this.sessionConfig);
+    ctx.cookies.set(this.sessionCookieName, uuid(), this.sessionConfig);
     ctx.redirect('home');
   }
 
