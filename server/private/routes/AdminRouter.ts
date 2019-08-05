@@ -3,7 +3,6 @@ import { promises as fs } from 'fs';
 import bcrypt from 'bcrypt';
 import Router from '../../src/Router';
 import AdminAPIRouter from './api/AdminAPIRouter';
-import BlogPostController from '../controllers/BlogPostController';
 import BlogPost from '../models/BlogPost';
 import AdminUser from '../models/AdminUser';
 import { random_id } from '../../util/fns';
@@ -11,10 +10,7 @@ import { random_id } from '../../util/fns';
 const log = console.log;
 const BASE_TITLE = '- Admin';
 const ONE_DAY_IN_MS = 86400;
-const SALT_ROUNDS = 10;
-
-const is_valid_password = (pass: string) =>
-  pass.length >= 2 && pass.length <= 55;
+const adminUsersMap: Map<string, AdminUser> = new Map();
 
 type AdminLoginParameters = {
   loginUsername: string;
@@ -23,6 +19,7 @@ type AdminLoginParameters = {
 type AdminRegisterParameters = {
   registerUsername: string;
   registerPassword: string;
+  email: string;
 };
 type AdminBlogPostQueryParameters = {
   action: 'new' | 'edit';
@@ -79,43 +76,42 @@ export default class AdminRouter extends Router {
 
     const { loginUsername, loginPassword } = ctx.request
       .body as AdminLoginParameters;
-    const { username, password } = JSON.parse(
-      await fs.readFile('users.json', { encoding: 'utf-8' })
-    );
-    const isUser = loginUsername === username;
-    const isMatchingPassword = await bcrypt.compare(loginPassword, password);
 
-    if (isUser && isMatchingPassword) {
-      ctx.cookies.set(this.sessionCookieName, random_id(), this.sessionConfig);
-      ctx.redirect('home');
-    } else {
+    const [successfulLogin, adminUser] = await AdminUser.attempt_login(
+      loginUsername,
+      loginPassword
+    );
+
+    if (!successfulLogin) {
       ctx.status = 403;
       await this.send_login_page(ctx);
+    } else {
+      const cookieId = random_id();
+
+      ctx.cookies.set(this.sessionCookieName, cookieId, this.sessionConfig);
+      adminUsersMap.set(cookieId, adminUser);
+      ctx.redirect('home');
     }
   }
 
   private async register_user(ctx: Koa.ParameterizedContext): Promise<void> {
     if (ctx.cookies.get(this.sessionCookieName)) ctx.redirect('home'); // reached login/register page, logged in
 
-    const { registerUsername, registerPassword } = ctx.request
+    const { registerUsername, registerPassword, email } = ctx.request
       .body as AdminRegisterParameters;
 
-    const [hasErr, ...errMsgs] = AdminUser.validate_registration_credentials(
+    const [hasErr, newUser] = await AdminUser.register(
       registerUsername,
-      registerPassword
+      registerPassword,
+      email
     );
 
-    if (hasErr) ctx.throw(errMsgs.join('\n'), 401);
+    if (hasErr instanceof Error) ctx.throw(hasErr.message, 401);
 
-    const hash = await bcrypt.hash(registerPassword, SALT_ROUNDS);
+    const cookieId = random_id();
 
-    await fs.writeFile(
-      'users.json',
-      JSON.stringify({ username: registerUsername, password: hash })
-    );
-
-    ctx.cookies.set(this.sessionCookieName, random_id(), this.sessionConfig);
-
+    adminUsersMap.set(cookieId, newUser);
+    ctx.cookies.set(this.sessionCookieName, cookieId, this.sessionConfig);
     ctx.redirect('home');
   }
 

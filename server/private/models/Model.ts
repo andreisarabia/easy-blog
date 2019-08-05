@@ -23,6 +23,10 @@ export default class Model {
     return this.db.insert(this.props, includeInResults);
   }
 
+  protected async find(criteria: object): Promise<object[]> {
+    return this.db.find(criteria);
+  }
+
   public valueOf(): object {
     return this.props;
   }
