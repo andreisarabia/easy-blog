@@ -1,6 +1,4 @@
 import Koa from 'koa';
-import { promises as fs } from 'fs';
-import bcrypt from 'bcrypt';
 import Router from '../../src/Router';
 import AdminAPIRouter from './api/AdminAPIRouter';
 import BlogPost from '../models/BlogPost';
@@ -10,7 +8,6 @@ import { random_id } from '../../util/fns';
 const log = console.log;
 const BASE_TITLE = '- Admin';
 const ONE_DAY_IN_MS = 86400;
-const adminUsersMap: Map<string, AdminUser> = new Map();
 
 type AdminLoginParameters = {
   loginUsername: string;
@@ -72,12 +69,12 @@ export default class AdminRouter extends Router {
   }
 
   private async login_user(ctx: Koa.ParameterizedContext): Promise<void> {
-    if (ctx.cookies.get(this.sessionCookieName)) ctx.redirect('home'); // reached login/register page, logged in
+    if (ctx.cookies.get(this.sessionCookieName)) ctx.redirect('back', 'home'); // reached login/register page, logged in
 
     const { loginUsername, loginPassword } = ctx.request
       .body as AdminLoginParameters;
 
-    const [successfulLogin, adminUser] = await AdminUser.attempt_login(
+    const [successfulLogin] = await AdminUser.attempt_login(
       loginUsername,
       loginPassword
     );
@@ -86,32 +83,26 @@ export default class AdminRouter extends Router {
       ctx.status = 403;
       await this.send_login_page(ctx);
     } else {
-      const cookieId = random_id();
-
-      ctx.cookies.set(this.sessionCookieName, cookieId, this.sessionConfig);
-      adminUsersMap.set(cookieId, adminUser);
+      ctx.cookies.set(this.sessionCookieName, random_id(), this.sessionConfig);
       ctx.redirect('home');
     }
   }
 
   private async register_user(ctx: Koa.ParameterizedContext): Promise<void> {
-    if (ctx.cookies.get(this.sessionCookieName)) ctx.redirect('home'); // reached login/register page, logged in
+    if (ctx.cookies.get(this.sessionCookieName)) ctx.redirect('back', 'home'); // reached login/register page, logged in
 
     const { registerUsername, registerPassword, email } = ctx.request
       .body as AdminRegisterParameters;
 
-    const [hasErr, newUser] = await AdminUser.register(
+    const [err] = await AdminUser.register(
       registerUsername,
       registerPassword,
       email
     );
 
-    if (hasErr instanceof Error) ctx.throw(hasErr.message, 401);
+    if (err instanceof Error) ctx.throw(err.message, 401);
 
-    const cookieId = random_id();
-
-    adminUsersMap.set(cookieId, newUser);
-    ctx.cookies.set(this.sessionCookieName, cookieId, this.sessionConfig);
+    ctx.cookies.set(this.sessionCookieName, random_id(), this.sessionConfig);
     ctx.redirect('home');
   }
 

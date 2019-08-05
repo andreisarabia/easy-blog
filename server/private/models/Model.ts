@@ -23,8 +23,11 @@ export default class Model {
     return this.db.insert(this.props, includeInResults);
   }
 
-  protected async find(criteria: object): Promise<object[]> {
-    return this.db.find(criteria);
+  protected async find(
+    criteria: object,
+    limit: number = 0
+  ): Promise<object | object[]> {
+    return this.db.find(criteria, { limit });
   }
 
   public valueOf(): object {

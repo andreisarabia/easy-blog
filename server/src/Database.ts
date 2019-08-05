@@ -1,10 +1,10 @@
 import {
-  MongoClient,
   Collection,
-  Db,
+  FilterQuery,
+  FindOneOptions,
   InsertOneWriteOpResult,
   InsertWriteOpResult,
-  ObjectID
+  MongoClient
 } from 'mongodb';
 
 const dbMap: Map<string, Database> = new Map();
@@ -44,6 +44,7 @@ export default class Database {
   ): Promise<[Error, QueryResults]> {
     try {
       const collection = await this.dbCollection;
+
       const result:
         | InsertWriteOpResult
         | InsertOneWriteOpResult
@@ -73,12 +74,14 @@ export default class Database {
   }
 
   public async find(
-    documentCriteria: object = {},
-    mapCb?: Function
-  ): Promise<object[]> {
+    documentCriteria: FilterQuery<any>,
+    options?: FindOneOptions
+  ): Promise<object | object[]> {
     const collection = await this.dbCollection;
 
-    return await collection.find(documentCriteria).toArray();
+    return options && options.limit === 1
+      ? collection.findOne(documentCriteria)
+      : collection.find(documentCriteria, options).toArray();
   }
 
   public static instance(dbCollectionName: string): Database {

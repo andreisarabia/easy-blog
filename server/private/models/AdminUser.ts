@@ -28,6 +28,10 @@ export default class AdminUser extends Model {
     return this.props.username;
   }
 
+  private get email(): string {
+    return this.props.email;
+  }
+
   public async save(): Promise<AdminUser> {
     const [error, results] = await super.save({
       includeInResults: ['insertedId']
@@ -41,7 +45,11 @@ export default class AdminUser extends Model {
   }
 
   private async populate(): Promise<AdminUser> {
-    const [doc] = (await super.find({})) as AdminUserParameters[];
+    const criteria = this.username
+      ? { username: this.username }
+      : { email: this.email };
+
+    const doc = (await super.find(criteria, 1)) as AdminUserParameters;
 
     this.props = { ...doc };
 
@@ -56,6 +64,7 @@ export default class AdminUser extends Model {
       const searchedAdminUser = await new AdminUser({ username }).populate();
 
       if (!searchedAdminUser.username) return [false, null];
+      if (searchedAdminUser.username !== username) return [false, null];
 
       const isMatchingPassword = await bcrypt.compare(
         password,
@@ -74,29 +83,34 @@ export default class AdminUser extends Model {
     email: string
   ): Promise<[Error, AdminUser]> {
     try {
-      const [hasErr, ...errs] = AdminUser.validate_registration_credentials(
+      const [hasErr, ...errs] = await AdminUser.validate_credentials(
         username,
         password
       );
 
       if (hasErr) throw errs;
 
-      const newlyRegisteredUser = new AdminUser({
+      const hashedPassword = await bcrypt.hash(password, SALT_ROUNDS);
+      const newlyRegisteredUser = await new AdminUser({
         username,
-        password: await bcrypt.hash(password, SALT_ROUNDS),
+        password: hashedPassword,
         email
-      });
+      }).save();
 
-      return [null, await newlyRegisteredUser.save()];
+      return [null, newlyRegisteredUser];
     } catch (error) {
       return [Array.isArray(error) ? Error(error.join('\n')) : error, null];
     }
   }
 
-  private static validate_registration_credentials(
+  private static async validate_credentials(
     username: string,
     password: string
-  ): [boolean, ...string[]] {
+  ): Promise<[boolean, ...string[]]> {
+    if (await AdminUser.exists(username)) {
+      return [true, 'Username is not valid.'];
+    }
+
     const errors = [];
 
     if (username.length > 35) {
@@ -112,5 +126,11 @@ export default class AdminUser extends Model {
     }
 
     return errors.length > 0 ? [true, ...errors] : [false, null];
+  }
+
+  private static async exists(username: string): Promise<boolean> {
+    const searchedAdminUser = await new AdminUser({ username }).populate();
+
+    return Boolean(searchedAdminUser.username && searchedAdminUser.email);
   }
 }
