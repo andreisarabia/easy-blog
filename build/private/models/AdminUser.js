@@ -43,30 +43,29 @@ class AdminUser extends Model_1.default {
         return this;
     }
     static async attempt_login(username, password) {
-        try {
-            const searchedAdminUser = await new AdminUser({ username }).populate();
-            if (!searchedAdminUser.username)
-                return [false, null];
-            if (searchedAdminUser.username !== username)
-                return [false, null];
-            const isMatchingPassword = await bcrypt_1.default.compare(password, searchedAdminUser.password);
-            return isMatchingPassword ? [true, searchedAdminUser] : [false, null];
+        const searchedAdminUser = await new AdminUser({ username }).populate();
+        if (!(searchedAdminUser.username && searchedAdminUser.username === username)) {
+            return [Error('User does not exist.'), null];
         }
-        catch (error) {
-            return [false, null];
-        }
+        const isMatchingPassword = await bcrypt_1.default.compare(password, searchedAdminUser.password);
+        return isMatchingPassword
+            ? [null, searchedAdminUser]
+            : [Error('User and password combination do not exist.'), null];
     }
-    static async register(username, password, email) {
+    static async register(username, password, email, cookieName) {
         const [hasErr, ...errs] = await AdminUser.validate_credentials(username, password);
         if (hasErr)
             return [Error(errs.join('\n')), null];
-        const hashedPassword = await bcrypt_1.default.hash(password, SALT_ROUNDS);
-        const newlyRegisteredUser = await new AdminUser({
+        const adminUserParams = {
             username,
-            password: hashedPassword,
-            email,
-            cookie: v4_1.default()
-        }).save();
+            password: await bcrypt_1.default.hash(password, SALT_ROUNDS),
+            email
+        };
+        if (cookieName) {
+            adminUserParams.cookie = v4_1.default();
+            adminUserParams.cookieName = cookieName;
+        }
+        const newlyRegisteredUser = await new AdminUser(adminUserParams).save();
         return [null, newlyRegisteredUser];
     }
     static async validate_credentials(username, password) {

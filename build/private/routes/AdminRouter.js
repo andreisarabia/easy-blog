@@ -21,7 +21,7 @@ class AdminRouter extends Router_1.default {
         const apiRouter = new AdminAPIRouter_1.default();
         this.instance
             .get('login', ctx => this.send_login_page(ctx))
-            .get('logout', ctx => this.logout_user(ctx))
+            .all('logout', ctx => this.logout_user(ctx))
             .post('login', ctx => this.login_user(ctx))
             .post('register', ctx => this.register_user(ctx))
             .use((ctx, next) => ctx.cookies.get(this.sessionCookieName)
@@ -42,6 +42,7 @@ class AdminRouter extends Router_1.default {
     }
     async logout_user(ctx) {
         ctx.session = null;
+        ctx.method = 'GET';
         ctx.redirect('login');
     }
     async login_user(ctx) {
@@ -50,7 +51,7 @@ class AdminRouter extends Router_1.default {
         const { loginUsername, loginPassword } = ctx.request
             .body;
         const [successfulLogin, user] = await AdminUser_1.default.attempt_login(loginUsername, loginPassword);
-        if (!successfulLogin || !ctx.cookies.get(user.cookieId)) {
+        if (!successfulLogin) {
             ctx.status = 403;
             await this.send_login_page(ctx);
         }
@@ -64,7 +65,7 @@ class AdminRouter extends Router_1.default {
             ctx.redirect('back', 'home');
         const { registerUsername, registerPassword, email } = ctx.request
             .body;
-        const [err, newUser] = await AdminUser_1.default.register(registerUsername, registerPassword, email);
+        const [err, newUser] = await AdminUser_1.default.register(registerUsername, registerPassword, email, this.sessionCookieName);
         if (err instanceof Error)
             ctx.throw(err.message, 401);
         ctx.cookies.set(this.sessionCookieName, newUser.cookieId, this.sessionConfig);

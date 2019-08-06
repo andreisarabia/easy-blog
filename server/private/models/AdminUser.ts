@@ -12,6 +12,7 @@ type AdminUserParameters = {
   password?: string;
   email?: string;
   cookie?: string;
+  cookieName?: string;
   _id?: string;
 };
 
@@ -65,28 +66,30 @@ export default class AdminUser extends Model {
   public static async attempt_login(
     username: string,
     password: string
-  ): Promise<[boolean, AdminUser]> {
-    try {
-      const searchedAdminUser = await new AdminUser({ username }).populate();
+  ): Promise<[Error, AdminUser]> {
+    const searchedAdminUser = await new AdminUser({ username }).populate();
 
-      if (!searchedAdminUser.username) return [false, null];
-      if (searchedAdminUser.username !== username) return [false, null];
-
-      const isMatchingPassword = await bcrypt.compare(
-        password,
-        searchedAdminUser.password
-      );
-
-      return isMatchingPassword ? [true, searchedAdminUser] : [false, null];
-    } catch (error) {
-      return [false, null];
+    if (
+      !(searchedAdminUser.username && searchedAdminUser.username === username)
+    ) {
+      return [Error('User does not exist.'), null];
     }
+
+    const isMatchingPassword = await bcrypt.compare(
+      password,
+      searchedAdminUser.password
+    );
+
+    return isMatchingPassword
+      ? [null, searchedAdminUser]
+      : [Error('User and password combination do not exist.'), null];
   }
 
   public static async register(
     username: string,
     password: string,
-    email: string
+    email: string,
+    cookieName?: string
   ): Promise<[Error, AdminUser]> {
     const [hasErr, ...errs] = await AdminUser.validate_credentials(
       username,
@@ -95,13 +98,18 @@ export default class AdminUser extends Model {
 
     if (hasErr) return [Error(errs.join('\n')), null];
 
-    const hashedPassword = await bcrypt.hash(password, SALT_ROUNDS);
-    const newlyRegisteredUser = await new AdminUser({
+    const adminUserParams: AdminUserParameters = {
       username,
-      password: hashedPassword,
-      email,
-      cookie: uuid()
-    }).save();
+      password: await bcrypt.hash(password, SALT_ROUNDS),
+      email
+    };
+
+    if (cookieName) {
+      adminUserParams.cookie = uuid();
+      adminUserParams.cookieName = cookieName;
+    }
+
+    const newlyRegisteredUser = await new AdminUser(adminUserParams).save();
 
     return [null, newlyRegisteredUser];
   }

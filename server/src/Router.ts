@@ -37,7 +37,7 @@ export default class Router {
   protected async refresh_template_cache(): Promise<void> {
     const start = Date.now();
     for await (const filePath of read_dir_recursively(this.templatePath)) {
-      const { dir } = path.parse(filePath)
+      const { dir } = path.parse(filePath);
       const newBasePath = dir.slice(dir.indexOf(this.templatePath));
       this.cachedTemplates.set(
         `${newBasePath}${path.sep}${path.basename(filePath)}`,
@@ -48,10 +48,8 @@ export default class Router {
   }
 
   public get allPaths(): Map<string, string[]> {
-    if (this.pathMap.size > 0) return this.pathMap;
     for (const { path, methods } of this.instance.stack) {
       if (path.includes('.*')) continue;
-      if (this.pathMap.has(path)) methods.concat(this.pathMap.get(path));
       this.pathMap.set(path, methods);
     }
     return this.pathMap;

@@ -1,5 +1,4 @@
 import Koa from 'koa';
-import uuid from 'uuid/v4';
 import Router from '../../src/Router';
 import AdminAPIRouter from './api/AdminAPIRouter';
 import BlogPost from '../models/BlogPost';
@@ -43,7 +42,7 @@ export default class AdminRouter extends Router {
 
     this.instance
       .get('login', ctx => this.send_login_page(ctx))
-      .get('logout', ctx => this.logout_user(ctx))
+      .all('logout', ctx => this.logout_user(ctx))
       .post('login', ctx => this.login_user(ctx))
       .post('register', ctx => this.register_user(ctx))
       .use(
@@ -71,6 +70,7 @@ export default class AdminRouter extends Router {
 
   private async logout_user(ctx: Koa.ParameterizedContext): Promise<void> {
     ctx.session = null;
+    ctx.method = 'GET';
     ctx.redirect('login');
   }
 
@@ -85,11 +85,15 @@ export default class AdminRouter extends Router {
       loginPassword
     );
 
-    if (!successfulLogin || !ctx.cookies.get(user.cookieId)) {
+    if (!successfulLogin) {
       ctx.status = 403;
       await this.send_login_page(ctx);
     } else {
-      ctx.cookies.set(this.sessionCookieName, user.cookieId, this.sessionConfig);
+      ctx.cookies.set(
+        this.sessionCookieName,
+        user.cookieId,
+        this.sessionConfig
+      );
       ctx.redirect('home');
     }
   }
@@ -103,7 +107,8 @@ export default class AdminRouter extends Router {
     const [err, newUser] = await AdminUser.register(
       registerUsername,
       registerPassword,
-      email
+      email,
+      this.sessionCookieName
     );
 
     if (err instanceof Error) ctx.throw(err.message, 401);
