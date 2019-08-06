@@ -1,4 +1,5 @@
 import bcrypt from 'bcrypt';
+import uuid from 'uuid/v4';
 import Model from './Model';
 import { is_alphanumeric } from '../../util/validator';
 
@@ -10,6 +11,7 @@ type AdminUserParameters = {
   username: string;
   password?: string;
   email?: string;
+  cookie?: string;
   _id?: string;
 };
 
@@ -28,8 +30,12 @@ export default class AdminUser extends Model {
     return this.props.username;
   }
 
-  private get email(): string {
+  public get email(): string {
     return this.props.email;
+  }
+
+  public get cookieId(): string {
+    return this.props.cookie;
   }
 
   public async save(): Promise<AdminUser> {
@@ -82,25 +88,22 @@ export default class AdminUser extends Model {
     password: string,
     email: string
   ): Promise<[Error, AdminUser]> {
-    try {
-      const [hasErr, ...errs] = await AdminUser.validate_credentials(
-        username,
-        password
-      );
+    const [hasErr, ...errs] = await AdminUser.validate_credentials(
+      username,
+      password
+    );
 
-      if (hasErr) throw errs;
+    if (hasErr) return [Error(errs.join('\n')), null];
 
-      const hashedPassword = await bcrypt.hash(password, SALT_ROUNDS);
-      const newlyRegisteredUser = await new AdminUser({
-        username,
-        password: hashedPassword,
-        email
-      }).save();
+    const hashedPassword = await bcrypt.hash(password, SALT_ROUNDS);
+    const newlyRegisteredUser = await new AdminUser({
+      username,
+      password: hashedPassword,
+      email,
+      cookie: uuid()
+    }).save();
 
-      return [null, newlyRegisteredUser];
-    } catch (error) {
-      return [Array.isArray(error) ? Error(error.join('\n')) : error, null];
-    }
+    return [null, newlyRegisteredUser];
   }
 
   private static async validate_credentials(

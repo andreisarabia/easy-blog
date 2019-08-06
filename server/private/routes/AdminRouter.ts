@@ -80,16 +80,16 @@ export default class AdminRouter extends Router {
     const { loginUsername, loginPassword } = ctx.request
       .body as AdminLoginParameters;
 
-    const [successfulLogin] = await AdminUser.attempt_login(
+    const [successfulLogin, user] = await AdminUser.attempt_login(
       loginUsername,
       loginPassword
     );
 
-    if (!successfulLogin) {
+    if (!successfulLogin || !ctx.cookies.get(user.cookieId)) {
       ctx.status = 403;
       await this.send_login_page(ctx);
     } else {
-      ctx.cookies.set(this.sessionCookieName, uuid(), this.sessionConfig);
+      ctx.cookies.set(this.sessionCookieName, user.cookieId, this.sessionConfig);
       ctx.redirect('home');
     }
   }
@@ -100,7 +100,7 @@ export default class AdminRouter extends Router {
     const { registerUsername, registerPassword, email } = ctx.request
       .body as AdminRegisterParameters;
 
-    const [err] = await AdminUser.register(
+    const [err, newUser] = await AdminUser.register(
       registerUsername,
       registerPassword,
       email
@@ -108,7 +108,11 @@ export default class AdminRouter extends Router {
 
     if (err instanceof Error) ctx.throw(err.message, 401);
 
-    ctx.cookies.set(this.sessionCookieName, uuid(), this.sessionConfig);
+    ctx.cookies.set(
+      this.sessionCookieName,
+      newUser.cookieId,
+      this.sessionConfig
+    );
     ctx.redirect('home');
   }
 
