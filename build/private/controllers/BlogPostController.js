@@ -7,9 +7,12 @@ const Controller_1 = __importDefault(require("./Controller"));
 const BlogPost_1 = __importDefault(require("../models/BlogPost"));
 const databaseCollection = 'blog_posts';
 class BlogPostController extends Controller_1.default {
+    constructor() {
+        super('blog_posts');
+    }
     async find_all() {
         const documents = (await super.find({}));
         return documents.map(doc => new BlogPost_1.default(doc));
     }
 }
-exports.default = new BlogPostController('blog_posts');
+exports.default = new BlogPostController();

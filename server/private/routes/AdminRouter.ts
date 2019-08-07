@@ -42,15 +42,16 @@ export default class AdminRouter extends Router {
 
     this.instance
       .get('login', ctx => this.send_login_page(ctx))
-      .all('logout', ctx => this.logout_user(ctx))
+      .get('logout', ctx => this.logout_user(ctx))
       .post('login', ctx => this.login_user(ctx))
       .post('register', ctx => this.register_user(ctx))
-      .use(
-        (ctx, next) =>
-          ctx.cookies.get(this.sessionCookieName)
-            ? next()
-            : this.send_login_page(ctx) // tried to reach protected endpoints w/o valid cookie
-      )
+      .use((ctx, next) => {
+        if (ctx.cookies.get(this.sessionCookieName)) {
+          next();
+        } else {
+          ctx.redirect('login'); // tried to reach protected endpoints w/o valid cookie
+        }
+      })
       .get('home', ctx => this.send_home_page(ctx))
       .get('posts', ctx => this.send_posts_page(ctx))
       .post('reset-templates', ctx => this.refresh_templates(ctx))
@@ -69,8 +70,8 @@ export default class AdminRouter extends Router {
   }
 
   private async logout_user(ctx: Koa.ParameterizedContext): Promise<void> {
-    ctx.session = null;
-    ctx.method = 'GET';
+    const cookie = ctx.cookies.get(this.sessionCookieName);
+    ctx.cookies.set(this.sessionCookieName, cookie, { maxAge: 1 });
     ctx.redirect('login');
   }
 
@@ -80,12 +81,12 @@ export default class AdminRouter extends Router {
     const { loginUsername, loginPassword } = ctx.request
       .body as AdminLoginParameters;
 
-    const [successfulLogin, user] = await AdminUser.attempt_login(
+    const [loginErr, user] = await AdminUser.attempt_login(
       loginUsername,
       loginPassword
     );
 
-    if (!successfulLogin) {
+    if (loginErr) {
       ctx.status = 403;
       await this.send_login_page(ctx);
     } else {

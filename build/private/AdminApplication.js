@@ -53,9 +53,11 @@ class AdminApplication {
             await next();
             const xResponseTime = Date.now() - start;
             ctx.set('X-Response-Time', `${xResponseTime}ms`);
-            ctx.session.views = ctx.session.views + 1 || 1;
+            if (ctx.session) {
+                ctx.session.views = ctx.session.views + 1 || 1;
+                log('Views:', ctx.session.views);
+            }
             log(`${ctx.method} ${ctx.url} (${ctx.status}) - ${xResponseTime}ms`);
-            log('Views:', ctx.session.views);
         })
             .use(adminRouter.middleware.routes())
             .use(adminRouter.middleware.allowedMethods())

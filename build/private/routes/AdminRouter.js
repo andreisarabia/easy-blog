@@ -21,12 +21,17 @@ class AdminRouter extends Router_1.default {
         const apiRouter = new AdminAPIRouter_1.default();
         this.instance
             .get('login', ctx => this.send_login_page(ctx))
-            .all('logout', ctx => this.logout_user(ctx))
+            .get('logout', ctx => this.logout_user(ctx))
             .post('login', ctx => this.login_user(ctx))
             .post('register', ctx => this.register_user(ctx))
-            .use((ctx, next) => ctx.cookies.get(this.sessionCookieName)
-            ? next()
-            : this.send_login_page(ctx))
+            .use((ctx, next) => {
+            if (ctx.cookies.get(this.sessionCookieName)) {
+                next();
+            }
+            else {
+                ctx.redirect('login');
+            }
+        })
             .get('home', ctx => this.send_home_page(ctx))
             .get('posts', ctx => this.send_posts_page(ctx))
             .post('reset-templates', ctx => this.refresh_templates(ctx))
@@ -41,8 +46,8 @@ class AdminRouter extends Router_1.default {
         ctx.body = await super.render('login.ejs', { csrf: ctx.csrf });
     }
     async logout_user(ctx) {
-        ctx.session = null;
-        ctx.method = 'GET';
+        const cookie = ctx.cookies.get(this.sessionCookieName);
+        ctx.cookies.set(this.sessionCookieName, cookie, { maxAge: 1 });
         ctx.redirect('login');
     }
     async login_user(ctx) {
@@ -50,8 +55,8 @@ class AdminRouter extends Router_1.default {
             ctx.redirect('back', 'home');
         const { loginUsername, loginPassword } = ctx.request
             .body;
-        const [successfulLogin, user] = await AdminUser_1.default.attempt_login(loginUsername, loginPassword);
-        if (!successfulLogin) {
+        const [loginErr, user] = await AdminUser_1.default.attempt_login(loginUsername, loginPassword);
+        if (loginErr) {
             ctx.status = 403;
             await this.send_login_page(ctx);
         }

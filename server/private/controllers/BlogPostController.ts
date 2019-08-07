@@ -14,6 +14,10 @@ type BlogPostParameters = {
 };
 
 class BlogPostController extends Controller {
+  constructor() {
+    super('blog_posts');
+  }
+
   public async find_all(): Promise<BlogPost[]> {
     const documents = (await super.find({})) as BlogPostParameters[];
 
@@ -21,4 +25,4 @@ class BlogPostController extends Controller {
   }
 }
 
-export default new BlogPostController('blog_posts');
+export default new BlogPostController();

@@ -23,7 +23,7 @@ export default class Database {
   private collection: Collection;
   private dbCollectionName: string;
 
-  constructor({ dbCollectionName = '' }: { dbCollectionName: string }) {
+  private constructor({ dbCollectionName = '' }: { dbCollectionName: string }) {
     this.dbCollectionName = dbCollectionName;
   }
 
