@@ -4,16 +4,13 @@ const mongodb_1 = require("mongodb");
 const dbMap = new Map();
 const dbClient = mongodb_1.MongoClient.connect(process.env.MONGO_URI || '', { useNewUrlParser: true });
 class Database {
-    constructor({ dbCollectionName = '' }) {
+    constructor({ dbCollectionName }) {
         this.dbCollectionName = dbCollectionName;
     }
     get dbCollection() {
         return new Promise(async (resolve) => {
-            if (!this.collection) {
-                const client = await dbClient;
-                this.collection = client.db().collection(this.dbCollectionName);
-            }
-            resolve(this.collection);
+            const client = await dbClient;
+            resolve(client.db().collection(this.dbCollectionName));
         });
     }
     async insert(dataObjs, extraInfoToReturn) {

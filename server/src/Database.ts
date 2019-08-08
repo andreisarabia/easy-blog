@@ -20,21 +20,16 @@ type QueryResults = {
 };
 
 export default class Database {
-  private collection: Collection;
   private dbCollectionName: string;
 
-  private constructor({ dbCollectionName = '' }: { dbCollectionName: string }) {
+  private constructor({ dbCollectionName }: { dbCollectionName: string }) {
     this.dbCollectionName = dbCollectionName;
   }
 
   private get dbCollection(): Promise<Collection> {
     return new Promise(async resolve => {
-      if (!this.collection) {
-        const client = await dbClient;
-        this.collection = client.db().collection(this.dbCollectionName);
-      }
-
-      resolve(this.collection);
+      const client = await dbClient;
+      resolve(client.db().collection(this.dbCollectionName));
     });
   }
 
