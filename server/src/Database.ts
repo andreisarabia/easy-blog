@@ -22,7 +22,7 @@ type QueryResults = {
 export default class Database {
   private dbCollectionName: string;
 
-  private constructor({ dbCollectionName = '' }: { dbCollectionName: string }) {
+  private constructor({ dbCollectionName }: { dbCollectionName: string }) {
     this.dbCollectionName = dbCollectionName;
   }
 
