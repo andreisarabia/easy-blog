@@ -1,14 +1,17 @@
 import {
-  MongoClient,
   Collection,
-  Db,
+  FilterQuery,
+  FindOneOptions,
   InsertOneWriteOpResult,
   InsertWriteOpResult,
-  ObjectID
+  MongoClient
 } from 'mongodb';
 
-const databaseName: string | undefined = process.env.MONGO_DB_NAME || '';
-const uri: string | undefined = process.env.MONGO_URI || '';
+const dbMap: Map<string, Database> = new Map();
+const dbClient: Promise<MongoClient> = MongoClient.connect(
+  process.env.MONGO_URI || '',
+  { useNewUrlParser: true }
+);
 
 type QueryResults = {
   insertedId?: string;
@@ -17,15 +20,27 @@ type QueryResults = {
 };
 
 export default class Database {
-  private dbClient: MongoClient = new MongoClient(uri);
-  private dbCollection: Collection;
+  private dbCollectionName: string;
 
-  constructor({ dbCollectionName = '' }: { dbCollectionName: string }) {
-    this.dbCollection = this.dbClient.db(dbCollectionName);
+  private constructor({ dbCollectionName }: { dbCollectionName: string }) {
+    this.dbCollectionName = dbCollectionName;
   }
 
-  private async reset_connection() {
-    await this.dbClient.close();
+  private get dbCollection(): Promise<Collection> {
+    return new Promise(async resolve => {
+      const client = await dbClient;
+      resolve(client.db().collection(this.dbCollectionName));
+    });
+  }
+
+  public async shutdown(): Promise<[boolean, Error]> {
+    try {
+      const client = await dbClient;
+      await client.close();
+      return [true, null];
+    } catch (error) {
+      return [false, error];
+    }
   }
 
   public async insert(
@@ -33,11 +48,14 @@ export default class Database {
     extraInfoToReturn?: ['insertedCount' | 'insertedId']
   ): Promise<[Error, QueryResults]> {
     try {
+      const collection = await this.dbCollection;
+
       const result:
         | InsertWriteOpResult
-        | InsertOneWriteOpResult = Array.isArray(dataObjs)
-        ? await this.dbCollection.insertMany(dataObjs as any[])
-        : await this.dbCollection.insertOne(dataObjs);
+        | InsertOneWriteOpResult
+        | any = Array.isArray(dataObjs)
+        ? await collection.insertMany(dataObjs as any[])
+        : await collection.insertOne(dataObjs);
 
       const resultToReturn: QueryResults = { ops: result.ops };
 
@@ -45,11 +63,11 @@ export default class Database {
 
       for (const infoRequested of extraInfoToReturn) {
         switch (infoRequested) {
-          case 'insertedId':
-            resultToReturn.insertedId = result.insertedId;
-            break;
           case 'insertedCount':
             resultToReturn.insertedCount = result.insertedCount;
+            break;
+          case 'insertedId':
+            resultToReturn.insertedId = result.insertedId;
             break;
         }
       }
@@ -58,5 +76,23 @@ export default class Database {
     } catch (error) {
       return [error, null];
     }
+  }
+
+  public async find(
+    documentCriteria: FilterQuery<any>,
+    options?: FindOneOptions
+  ): Promise<object | object[]> {
+    const collection = await this.dbCollection;
+
+    return options && options.limit === 1
+      ? collection.findOne(documentCriteria)
+      : collection.find(documentCriteria, options).toArray();
+  }
+
+  public static instance(dbCollectionName: string): Database {
+    if (!dbMap.has(dbCollectionName)) {
+      dbMap.set(dbCollectionName, new Database({ dbCollectionName }));
+    }
+    return dbMap.get(dbCollectionName);
   }
 }

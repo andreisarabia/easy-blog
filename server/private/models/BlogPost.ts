@@ -7,25 +7,15 @@ type BlogPostParameters = {
   timestamp: Date;
   htmlContent: string;
   quillData?: object;
-  uniqueId?: string;
+  _id?: string;
 };
 
 export default class BlogPost extends Model {
-  protected props: BlogPostParameters = {};
-  private previousId: string;
+  protected props: BlogPostParameters;
+  private penultimateId: string;
 
   constructor(props: BlogPostParameters) {
     super('blog_posts', props);
-  }
-
-  private get props(): object {
-    return {
-      title: this.props.title,
-      author: this.props.author,
-      timestamp: this.props.timestamp,
-      html: this.props.htmlContent,
-      quillData: { ...this.props.quillData }
-    };
   }
 
   public get info(): object {
@@ -33,7 +23,7 @@ export default class BlogPost extends Model {
   }
 
   public get id(): string {
-    return this.props.uniqueId;
+    return this.props._id;
   }
 
   public get postTitle(): string {
@@ -52,8 +42,8 @@ export default class BlogPost extends Model {
     return this.props.htmlContent;
   }
 
-  public get penultimateId(): string {
-    return this.previousId;
+  public get previousId(): string {
+    return this.penultimateId;
   }
 
   public async save(): Promise<BlogPost> {
@@ -63,9 +53,9 @@ export default class BlogPost extends Model {
 
     if (error) throw error;
 
-    if (this.props.uniqueId) this.previousId = this.props.uniqueId;
+    if (this.props._id) this.penultimateId = this.props._id;
 
-    this.props.uniqueId = results.insertedId;
+    this.props._id = results.insertedId;
 
     return this;
   }

@@ -1,18 +1,12 @@
 import Koa from 'koa';
-import { promises as fs } from 'fs';
-import bcrypt from 'bcrypt';
 import Router from '../../src/Router';
 import AdminAPIRouter from './api/AdminAPIRouter';
 import BlogPost from '../models/BlogPost';
-import { random_id } from '../../util/fns';
+import AdminUser from '../models/AdminUser';
 
 const log = console.log;
-const BASE_TITLE = ' - Admin';
+const BASE_TITLE = '- Admin';
 const ONE_DAY_IN_MS = 86400;
-const SALT_ROUNDS = 10;
-
-const is_valid_password = (pass: string) =>
-  pass.length >= 2 && pass.length <= 55;
 
 type AdminLoginParameters = {
   loginUsername: string;
@@ -21,16 +15,16 @@ type AdminLoginParameters = {
 type AdminRegisterParameters = {
   registerUsername: string;
   registerPassword: string;
+  email: string;
 };
-type AdminBlogPostParameters = {
-  action: AdminBlogPostActions;
+type AdminBlogPostQueryParameters = {
+  action: 'new' | 'edit';
 };
 type AdminBlogPostActionData = {
-  headerTitle: string;
+  title: string;
   posts: object[];
   editor: boolean;
 };
-type AdminBlogPostActions = 'new' | 'edit';
 
 export default class AdminRouter extends Router {
   private readonly sessionCookieName = 'easy-blog-admin:sess';
@@ -48,18 +42,19 @@ export default class AdminRouter extends Router {
 
     this.instance
       .get('login', ctx => this.send_login_page(ctx))
+      .get('logout', ctx => this.logout_user(ctx))
       .post('login', ctx => this.login_user(ctx))
       .post('register', ctx => this.register_user(ctx))
-      .use(async (ctx, next) => {
+      .use((ctx, next) => {
         if (ctx.cookies.get(this.sessionCookieName)) {
-          await next();
+          next();
         } else {
-          ctx.method = 'GET';
           ctx.redirect('login'); // tried to reach protected endpoints w/o valid cookie
         }
       })
       .get('home', ctx => this.send_home_page(ctx))
       .get('posts', ctx => this.send_posts_page(ctx))
+      .post('reset-templates', ctx => this.refresh_templates(ctx))
       .use(apiRouter.middleware.routes())
       .use(apiRouter.middleware.allowedMethods());
 
@@ -74,47 +69,56 @@ export default class AdminRouter extends Router {
     ctx.body = await super.render('login.ejs', { csrf: ctx.csrf });
   }
 
+  private async logout_user(ctx: Koa.ParameterizedContext): Promise<void> {
+    const cookie = ctx.cookies.get(this.sessionCookieName);
+    ctx.cookies.set(this.sessionCookieName, cookie, { maxAge: 0 });
+    ctx.redirect('login');
+  }
+
   private async login_user(ctx: Koa.ParameterizedContext): Promise<void> {
-    if (ctx.cookies.get(this.sessionCookieName)) ctx.redirect('home'); // reached login/register page, logged in
+    if (ctx.cookies.get(this.sessionCookieName)) ctx.redirect('back', 'home'); // reached login/register page, logged in
 
     const { loginUsername, loginPassword } = ctx.request
       .body as AdminLoginParameters;
-    const { username, password } = JSON.parse(
-      await fs.readFile('users.json', { encoding: 'utf-8' })
-    );
-    const isUser = loginUsername === username;
-    const isMatchingPassword = await bcrypt.compare(loginPassword, password);
 
-    if (isUser && isMatchingPassword) {
-      ctx.cookies.set(this.sessionCookieName, random_id(), this.sessionConfig);
-      ctx.redirect('home');
+    const [loginErr, user] = await AdminUser.attempt_login(
+      loginUsername,
+      loginPassword
+    );
+
+    if (loginErr instanceof Error) {
+      ctx.status = 403;
+      await this.send_login_page(ctx);
     } else {
-      ctx.method = 'GET';
-      ctx.redirect('login');
+      ctx.cookies.set(
+        this.sessionCookieName,
+        user.cookieId,
+        this.sessionConfig
+      );
+      ctx.redirect('home');
     }
   }
 
   private async register_user(ctx: Koa.ParameterizedContext): Promise<void> {
-    if (ctx.cookies.get(this.sessionCookieName)) ctx.redirect('home'); // reached login/register page, logged in
+    if (ctx.cookies.get(this.sessionCookieName)) ctx.redirect('back', 'home'); // reached login/register page, logged in
 
-    const { registerUsername, registerPassword } = ctx.request
+    const { registerUsername, registerPassword, email } = ctx.request
       .body as AdminRegisterParameters;
 
-    ctx.assert(
-      is_valid_password(registerPassword),
-      401,
-      'Password must be between 2 and 55 characters' // for now...
+    const [err, newUser] = await AdminUser.register(
+      registerUsername,
+      registerPassword,
+      email,
+      this.sessionCookieName
     );
 
-    const hash = await bcrypt.hash(registerPassword, SALT_ROUNDS);
+    if (err instanceof Error) ctx.throw(err.message, 401);
 
-    await fs.writeFile(
-      'users.json',
-      JSON.stringify({ username: registerUsername, password: hash })
+    ctx.cookies.set(
+      this.sessionCookieName,
+      newUser.cookieId,
+      this.sessionConfig
     );
-
-    ctx.cookies.set(this.sessionCookieName, random_id(), this.sessionConfig);
-
     ctx.redirect('home');
   }
 
@@ -127,45 +131,54 @@ export default class AdminRouter extends Router {
   }
 
   private async send_posts_page(ctx: Koa.ParameterizedContext): Promise<void> {
-    const { action } = ctx.query as AdminBlogPostParameters;
+    const { action } = ctx.query as AdminBlogPostQueryParameters;
     const data: AdminBlogPostActionData = {
-      headerTitle: '',
+      title: '',
       posts: null,
       editor: false
     };
 
-    log(action);
-
     switch (action) {
       case 'new':
-        data.headerTitle = 'New Post';
+        data.title = `New Post ${BASE_TITLE}`;
         data.editor = true;
         break;
       case 'edit':
         const blogId = +ctx.query.blogId;
         ctx.assert(Number.isSafeInteger(blogId));
         data.editor = true;
+        data.title = `Edit Post ${BASE_TITLE}`;
         break;
       case undefined:
-        data.headerTitle = 'Posts';
+        data.title = `Posts ${BASE_TITLE}`;
+
+        // console.log(this.blogCache);
 
         data.posts = [...this.blogCache.values()]
           .slice(0, 10)
           .map((blogPost, i) => ({
-            id: i,
+            id: blogPost.id,
             title: blogPost.postTitle,
             name: blogPost.author,
             date: blogPost.datePublished,
-            snippet: blogPost.htmlContent
+            snippet: blogPost.html
           }));
-
-        log(data.posts);
-        log(this.blogCache);
         break;
       default:
         ctx.redirect('back');
     }
 
-    ctx.body = await super.render('posts.ejs', { ...data, csrf: ctx.csrf });
+    ctx.body = await super.render('posts.ejs', {
+      ...data,
+      headerTitle: data.title,
+      csrf: ctx.csrf
+    });
+  }
+
+  private async refresh_templates(
+    ctx: Koa.ParameterizedContext
+  ): Promise<void> {
+    await super.refresh_template_cache();
+    ctx.body = { msg: 'ok' };
   }
 }

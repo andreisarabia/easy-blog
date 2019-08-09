@@ -13,7 +13,18 @@ const main = async () => {
   app.keys = ['easy-blog-visitor'];
 
   app
-    .use(koaSession({ key: 'eb-visitor', maxAge: 10000 }, app))
+    .use(
+      koaSession(
+        {
+          key: 'eb-visitor',
+          maxAge: 100000,
+          overwrite: true,
+          signed: true,
+          httpOnly: true
+        },
+        app
+      )
+    )
     .use(koaMount('/admin', adminApp.middleware))
     .listen(appPort, () => console.log('Listening...'));
 };

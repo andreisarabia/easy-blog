@@ -20,6 +20,7 @@ export default class Router {
   protected constructor({ templatePath, prefix = '/' }: RouterOptions) {
     if (templatePath) {
       this.templatePath = `templates${path.sep}${templatePath}`;
+      this.cachedTemplates = new Map();
       this.refresh_template_cache();
     }
 
@@ -34,7 +35,6 @@ export default class Router {
   // when templates are in cache, we replace each entry with
   // a refreshed read of its file
   protected async refresh_template_cache(): Promise<void> {
-    if (!this.cachedTemplates) this.cachedTemplates = new Map();
     const start = Date.now();
     for await (const filePath of read_dir_recursively(this.templatePath)) {
       const { dir } = path.parse(filePath);
@@ -48,10 +48,9 @@ export default class Router {
   }
 
   public get allPaths(): Map<string, string[]> {
-    if (this.pathMap.size > 0) return this.pathMap;
+    this.pathMap.clear();
     for (const { path, methods } of this.instance.stack) {
       if (path.includes('.*')) continue;
-      if (this.pathMap.has(path)) methods.concat(this.pathMap.get(path));
       this.pathMap.set(path, methods);
     }
     return this.pathMap;

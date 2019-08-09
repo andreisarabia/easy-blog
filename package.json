@@ -37,8 +37,8 @@
     "@types/koa-router": "^7.0.42",
     "@types/koa-session": "^5.10.1",
     "@types/koa-static": "^4.0.1",
-    "@types/mongodb": "^3.1.30",
-    "@types/node": "^12.6.8",
+    "@types/mongodb": "^3.1.32",
+    "@types/node": "^12.7.1",
     "@types/uuid": "^3.4.5",
     "cross-env": "^5.2.0",
     "nodemon": "^1.19.1"

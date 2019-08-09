@@ -1,10 +1,28 @@
 import Controller from './Controller';
 import BlogPost from '../models/BlogPost';
+import Database from '../../src/Database';
 
-export default class BlogPostController extends Controller {
-  protected static databaseCollection: string = 'blog_posts';
+const databaseCollection = 'blog_posts';
 
+type BlogPostParameters = {
+  title: string;
+  author: string;
+  timestamp: Date;
+  htmlContent: string;
+  quillData?: object;
+  _id?: string;
+};
+
+class BlogPostController extends Controller {
   constructor() {
-    super({ collection: 'blog_posts' });
+    super('blog_posts');
+  }
+
+  public async find_all(): Promise<BlogPost[]> {
+    const documents = (await super.find({})) as BlogPostParameters[];
+
+    return documents.map(doc => new BlogPost(doc));
   }
 }
+
+export default new BlogPostController();
