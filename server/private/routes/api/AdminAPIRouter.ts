@@ -1,5 +1,6 @@
 import Koa from 'koa';
 import Router from '../../../src/Router';
+import AdminUser from '../../models/AdminUser';
 import BlogPost from '../../models/BlogPost';
 import BlogPostController from '../../controllers/BlogPostController';
 
@@ -29,7 +30,8 @@ export default class AdminAPIRouter extends Router {
     this.instance
       .put('posts', ctx => this.create_post(ctx))
       .get('posts/:id', ctx => this.send_blog_data(ctx))
-      .post('posts/:id', ctx => this.act_on_post(ctx));
+      .post('posts/:id', ctx => this.act_on_post(ctx))
+      .post('user/update', ctx => this.update_user_permissions(ctx));
   }
 
   private async create_post(ctx: Koa.ParameterizedContext): Promise<void> {
@@ -65,5 +67,11 @@ export default class AdminAPIRouter extends Router {
 
   private async act_on_post(ctx: Koa.ParameterizedContext): Promise<void> {
     const { action } = ctx.request.body as AdminBlogPostQueryParameters;
+  }
+
+  private async update_user_permissions(
+    ctx: Koa.ParameterizedContext
+  ): Promise<void> {
+    
   }
 }

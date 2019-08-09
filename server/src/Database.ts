@@ -33,6 +33,16 @@ export default class Database {
     });
   }
 
+  public async shutdown(): Promise<[boolean, Error]> {
+    try {
+      const client = await dbClient;
+      await client.close();
+      return [true, null];
+    } catch (error) {
+      return [false, error];
+    }
+  }
+
   public async insert(
     dataObjs: object | object[],
     extraInfoToReturn?: ['insertedCount' | 'insertedId']
@@ -53,11 +63,11 @@ export default class Database {
 
       for (const infoRequested of extraInfoToReturn) {
         switch (infoRequested) {
-          case 'insertedId':
-            resultToReturn.insertedId = result.insertedId;
-            break;
           case 'insertedCount':
             resultToReturn.insertedCount = result.insertedCount;
+            break;
+          case 'insertedId':
+            resultToReturn.insertedId = result.insertedId;
             break;
         }
       }

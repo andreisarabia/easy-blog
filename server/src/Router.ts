@@ -48,6 +48,7 @@ export default class Router {
   }
 
   public get allPaths(): Map<string, string[]> {
+    this.pathMap.clear();
     for (const { path, methods } of this.instance.stack) {
       if (path.includes('.*')) continue;
       this.pathMap.set(path, methods);

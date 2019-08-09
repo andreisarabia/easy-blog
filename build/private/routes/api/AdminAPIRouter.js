@@ -15,7 +15,8 @@ class AdminAPIRouter extends Router_1.default {
         this.instance
             .put('posts', ctx => this.create_post(ctx))
             .get('posts/:id', ctx => this.send_blog_data(ctx))
-            .post('posts/:id', ctx => this.act_on_post(ctx));
+            .post('posts/:id', ctx => this.act_on_post(ctx))
+            .post('user/update', ctx => this.update_user_permissions(ctx));
     }
     async create_post(ctx) {
         const { title, authorName, htmlContent, rawQuillData } = ctx.request
@@ -42,6 +43,8 @@ class AdminAPIRouter extends Router_1.default {
     }
     async act_on_post(ctx) {
         const { action } = ctx.request.body;
+    }
+    async update_user_permissions(ctx) {
     }
 }
 exports.default = AdminAPIRouter;

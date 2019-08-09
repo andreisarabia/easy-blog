@@ -32,6 +32,7 @@ class Router {
         log(`${Date.now() - start}ms to load templates in ${this.templatePath}`);
     }
     get allPaths() {
+        this.pathMap.clear();
         for (const { path, methods } of this.instance.stack) {
             if (path.includes('.*'))
                 continue;

@@ -13,6 +13,16 @@ class Database {
             resolve(client.db().collection(this.dbCollectionName));
         });
     }
+    async shutdown() {
+        try {
+            const client = await dbClient;
+            await client.close();
+            return [true, null];
+        }
+        catch (error) {
+            return [false, error];
+        }
+    }
     async insert(dataObjs, extraInfoToReturn) {
         try {
             const collection = await this.dbCollection;
@@ -24,11 +34,11 @@ class Database {
                 return [null, resultToReturn];
             for (const infoRequested of extraInfoToReturn) {
                 switch (infoRequested) {
-                    case 'insertedId':
-                        resultToReturn.insertedId = result.insertedId;
-                        break;
                     case 'insertedCount':
                         resultToReturn.insertedCount = result.insertedCount;
+                        break;
+                    case 'insertedId':
+                        resultToReturn.insertedId = result.insertedId;
                         break;
                 }
             }
