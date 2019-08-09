@@ -47,7 +47,7 @@ class AdminRouter extends Router_1.default {
     }
     async logout_user(ctx) {
         const cookie = ctx.cookies.get(this.sessionCookieName);
-        ctx.cookies.set(this.sessionCookieName, cookie, { maxAge: 1 });
+        ctx.cookies.set(this.sessionCookieName, cookie, { maxAge: 0 });
         ctx.redirect('login');
     }
     async login_user(ctx) {
@@ -56,7 +56,7 @@ class AdminRouter extends Router_1.default {
         const { loginUsername, loginPassword } = ctx.request
             .body;
         const [loginErr, user] = await AdminUser_1.default.attempt_login(loginUsername, loginPassword);
-        if (loginErr) {
+        if (loginErr instanceof Error) {
             ctx.status = 403;
             await this.send_login_page(ctx);
         }

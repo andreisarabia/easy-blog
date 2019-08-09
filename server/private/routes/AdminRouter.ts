@@ -71,7 +71,7 @@ export default class AdminRouter extends Router {
 
   private async logout_user(ctx: Koa.ParameterizedContext): Promise<void> {
     const cookie = ctx.cookies.get(this.sessionCookieName);
-    ctx.cookies.set(this.sessionCookieName, cookie, { maxAge: 1 });
+    ctx.cookies.set(this.sessionCookieName, cookie, { maxAge: 0 });
     ctx.redirect('login');
   }
 
@@ -86,7 +86,7 @@ export default class AdminRouter extends Router {
       loginPassword
     );
 
-    if (loginErr) {
+    if (loginErr instanceof Error) {
       ctx.status = 403;
       await this.send_login_page(ctx);
     } else {

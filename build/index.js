@@ -14,7 +14,13 @@ const main = async () => {
     const appPort = +process.env.PORT || 3000;
     app.keys = ['easy-blog-visitor'];
     app
-        .use(koa_session_1.default({ key: 'eb-visitor', maxAge: 10000 }, app))
+        .use(koa_session_1.default({
+        key: 'eb-visitor',
+        maxAge: 100000,
+        overwrite: true,
+        signed: true,
+        httpOnly: true
+    }, app))
         .use(koa_mount_1.default('/admin', adminApp.middleware))
         .listen(appPort, () => console.log('Listening...'));
 };
