@@ -1,6 +1,4 @@
 import Koa from 'koa';
-import koaBody from 'koa-body';
-import KoaCSRF from 'koa-csrf';
 import koaStatic from 'koa-static';
 import AdminRouter from './routes/AdminRouter';
 import { is_url } from '../util/fns';
@@ -8,7 +6,7 @@ import { is_url } from '../util/fns';
 const ADMIN_ASSETS_PATH = 'templates/private/assets';
 const log = console.log;
 
-export default class AdminApplication {
+class AdminApplication {
   private app = new Koa();
   private readonly contentSecurityPolicy = {
     'default-src': ['self'],
@@ -48,8 +46,6 @@ export default class AdminApplication {
     this.app.keys = ['easy-blog-admin'];
 
     this.app
-      .use(koaBody({ json: true, multipart: true }))
-      .use(new KoaCSRF())
       .use(async (ctx, next) => {
         const start = Date.now();
 
@@ -78,3 +74,5 @@ export default class AdminApplication {
       .use(koaStatic(ADMIN_ASSETS_PATH, { defer: true }));
   }
 }
+
+export default new AdminApplication();

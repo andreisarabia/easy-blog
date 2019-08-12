@@ -27,7 +27,7 @@ type AdminBlogPostActionData = {
 };
 
 export default class AdminRouter extends Router {
-  private readonly sessionCookieName = 'easy-blog-admin:sess';
+  private readonly sessionCookieName = '_easy_blog_admin';
   private readonly sessionConfig = {
     httpOnly: true,
     signed: true,

@@ -4,8 +4,6 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const koa_1 = __importDefault(require("koa"));
-const koa_body_1 = __importDefault(require("koa-body"));
-const koa_csrf_1 = __importDefault(require("koa-csrf"));
 const koa_static_1 = __importDefault(require("koa-static"));
 const AdminRouter_1 = __importDefault(require("./routes/AdminRouter"));
 const fns_1 = require("../util/fns");
@@ -40,8 +38,6 @@ class AdminApplication {
         }, '');
         this.app.keys = ['easy-blog-admin'];
         this.app
-            .use(koa_body_1.default({ json: true, multipart: true }))
-            .use(new koa_csrf_1.default())
             .use(async (ctx, next) => {
             const start = Date.now();
             ctx.set({
@@ -64,4 +60,4 @@ class AdminApplication {
             .use(koa_static_1.default(ADMIN_ASSETS_PATH, { defer: true }));
     }
 }
-exports.default = AdminApplication;
+exports.default = new AdminApplication();

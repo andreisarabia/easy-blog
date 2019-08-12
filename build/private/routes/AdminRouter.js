@@ -12,7 +12,7 @@ const ONE_DAY_IN_MS = 86400;
 class AdminRouter extends Router_1.default {
     constructor() {
         super({ templatePath: 'private' });
-        this.sessionCookieName = 'easy-blog-admin:sess';
+        this.sessionCookieName = '_easy_blog_admin';
         this.sessionConfig = {
             httpOnly: true,
             signed: true,
