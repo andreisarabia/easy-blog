@@ -9,7 +9,6 @@ const BASE_TITLE = '- Easy Blog';
 class PublicRouter extends Router_1.default {
     constructor() {
         super({ templatePath: 'public' });
-        this.cache = new Map();
     }
 }
 exports.default = new PublicRouter();

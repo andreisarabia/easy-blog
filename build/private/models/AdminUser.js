@@ -46,7 +46,7 @@ class AdminUser extends Model_1.default {
     }
     static async attempt_login(username, password) {
         if (!username || !password) {
-            return [Error('Either a user or password were not sent.'), null];
+            return [Error('Either a username or password were not submitted.'), null];
         }
         const searchedAdminUser = await AdminUser.find(username);
         if (!searchedAdminUser.username || !searchedAdminUser.password) {
@@ -58,14 +58,11 @@ class AdminUser extends Model_1.default {
             : [Error('User and password combination do not exist.'), null];
     }
     static async register(username, password, email, cookieName) {
-        const [hasErr, ...errs] = await AdminUser.validate_credentials(username, password, email);
-        if (hasErr)
+        const errs = await AdminUser.validate_credentials(username, password, email);
+        if (errs.length > 0)
             return [Error(errs.join('\n')), null];
-        const adminUserParams = {
-            username,
-            password: await bcrypt_1.default.hash(password, SALT_ROUNDS),
-            email
-        };
+        password = await bcrypt_1.default.hash(password, SALT_ROUNDS);
+        const adminUserParams = { username, password, email };
         if (cookieName) {
             adminUserParams.cookie = v4_1.default();
             adminUserParams.cookieName = cookieName;
@@ -74,9 +71,8 @@ class AdminUser extends Model_1.default {
         return [null, newlyRegisteredUser];
     }
     static async validate_credentials(username, password, email) {
-        if (await AdminUser.exists(username)) {
-            return [true, 'Username is not valid.'];
-        }
+        if (await AdminUser.exists(username))
+            return ['Username is not valid.'];
         const errors = [];
         if (username.length > MAX_USERNAME_LENGTH) {
             errors.push(`Username must be fewer than ${MAX_USERNAME_LENGTH} characters.`);
@@ -96,11 +92,16 @@ class AdminUser extends Model_1.default {
         if (!validator_1.is_email(email)) {
             errors.push(`The provided email is formatted incorrectly.`);
         }
-        return errors.length > 0 ? [true, ...errors] : [false, null];
+        return errors;
     }
     static async exists(username) {
-        const searchedAdminUser = await AdminUser.find(username);
-        return Boolean(searchedAdminUser.username && searchedAdminUser.email);
+        try {
+            const searchedAdminUser = await AdminUser.find(username);
+            return Boolean(searchedAdminUser.username && searchedAdminUser.email);
+        }
+        catch (error) {
+            return false;
+        }
     }
 }
 exports.default = AdminUser;
