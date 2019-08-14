@@ -67,12 +67,14 @@ export default class AdminUser extends Model {
     username: string,
     password: string
   ): Promise<[Error, AdminUser]> {
+    if (!username || !password) {
+      return [Error('Either a user or password were not sent.'), null];
+    }
+
     const searchedAdminUser = await new AdminUser({ username }).populate();
 
-    if (
-      !(searchedAdminUser.username && searchedAdminUser.username === username)
-    ) {
-      return [Error('User does not exist.'), null];
+    if (!searchedAdminUser.username || !searchedAdminUser.password) {
+      return [Error('User and password combination do not exist.'), null];
     }
 
     const isMatchingPassword = await bcrypt.compare(

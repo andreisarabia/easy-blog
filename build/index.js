@@ -8,7 +8,6 @@ const koa_1 = __importDefault(require("koa"));
 const koa_mount_1 = __importDefault(require("koa-mount"));
 const koa_session_1 = __importDefault(require("koa-session"));
 const koa_body_1 = __importDefault(require("koa-body"));
-const koa_csrf_1 = __importDefault(require("koa-csrf"));
 const AdminApplication_1 = __importDefault(require("./private/AdminApplication"));
 const UserApplication_1 = __importDefault(require("./public/UserApplication"));
 const main = async () => {
@@ -25,7 +24,6 @@ const main = async () => {
     app
         .use(koa_session_1.default(sessionConfig, app))
         .use(koa_body_1.default({ json: true, multipart: true }))
-        .use(new koa_csrf_1.default())
         .use(koa_mount_1.default('/', UserApplication_1.default.middleware))
         .use(koa_mount_1.default('/admin', AdminApplication_1.default.middleware))
         .listen(appPort, () => console.log('Listening...'));

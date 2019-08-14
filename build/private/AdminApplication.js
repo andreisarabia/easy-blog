@@ -6,6 +6,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const koa_1 = __importDefault(require("koa"));
 const koa_static_1 = __importDefault(require("koa-static"));
 const AdminRouter_1 = __importDefault(require("./routes/AdminRouter"));
+const csrf_1 = __importDefault(require("../src/middleware/csrf"));
 const fns_1 = require("../util/fns");
 const ADMIN_ASSETS_PATH = 'templates/private/assets';
 const log = console.log;
@@ -23,8 +24,8 @@ class AdminApplication {
     get middleware() {
         return this.app;
     }
-    setup_middlewares() {
-        const cspDirectives = Object.entries(this.contentSecurityPolicy).reduce((cspString, [src, directives]) => {
+    get cspString() {
+        return Object.entries(this.contentSecurityPolicy).reduce((cspString, [src, directives]) => {
             const preppedDirectives = directives
                 .map(directive => fns_1.is_url(directive) || directive.startsWith('.*')
                 ? directive
@@ -35,8 +36,12 @@ class AdminApplication {
                 ? `${cspString}; ${directiveRule}`
                 : `${directiveRule}`;
         }, '');
+    }
+    setup_middlewares() {
+        const cspDirectives = this.cspString;
         this.app.keys = ['easy-blog-admin'];
         this.app
+            .use(csrf_1.default())
             .use(async (ctx, next) => {
             const start = Date.now();
             ctx.set({

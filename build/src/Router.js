@@ -9,6 +9,7 @@ const fs_1 = require("fs");
 const path_1 = __importDefault(require("path"));
 const fns_1 = require("../util/fns");
 const log = console.log;
+const defaultTemplateData = { errors: [] };
 class Router {
     constructor({ templatePath, prefix = '/' }) {
         this.pathMap = new Map();
@@ -45,10 +46,9 @@ class Router {
             this.cachedTemplates.get(`${this.templatePath}${path_1.default.sep}template.ejs`),
             this.cachedTemplates.get(`${this.templatePath}${path_1.default.sep}${templateName}`)
         ]);
-        const { title = 'Easy Blog', csrf = '', ...restOfData } = data || {};
-        const template = await ejs_1.default.render(requestedTemplate, { csrf, ...restOfData }, { async: true });
-        const universalData = { title, template, csrf };
-        return ejs_1.default.render(universalTemplate, universalData, { async: true });
+        const { title = 'Easy Blog', csrf = '', ...requestedTemplateData } = data || {};
+        const template = await ejs_1.default.render(requestedTemplate, { csrf, ...defaultTemplateData, ...requestedTemplateData }, { async: true });
+        return ejs_1.default.render(universalTemplate, { title, template, csrf }, { async: true });
     }
 }
 exports.default = Router;

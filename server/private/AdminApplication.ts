@@ -1,6 +1,7 @@
 import Koa from 'koa';
 import koaStatic from 'koa-static';
 import AdminRouter from './routes/AdminRouter';
+import csrf_middleware from '../src/middleware/csrf';
 import { is_url } from '../util/fns';
 
 const ADMIN_ASSETS_PATH = 'templates/private/assets';
@@ -19,12 +20,12 @@ class AdminApplication {
     this.setup_middlewares();
   }
 
-  public get middleware() {
+  public get middleware(): Koa {
     return this.app;
   }
 
-  private setup_middlewares(): void {
-    const cspDirectives = Object.entries(this.contentSecurityPolicy).reduce(
+  private get cspString(): string {
+    return Object.entries(this.contentSecurityPolicy).reduce(
       (cspString, [src, directives]) => {
         const preppedDirectives = directives
           .map(directive =>
@@ -41,10 +42,15 @@ class AdminApplication {
       },
       ''
     );
+  }
+
+  private setup_middlewares(): void {
+    const cspDirectives = this.cspString;
 
     this.app.keys = ['easy-blog-admin'];
 
     this.app
+      .use(csrf_middleware())
       .use(async (ctx, next) => {
         const start = Date.now();
 

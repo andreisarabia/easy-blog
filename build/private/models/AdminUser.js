@@ -43,9 +43,12 @@ class AdminUser extends Model_1.default {
         return this;
     }
     static async attempt_login(username, password) {
+        if (!username || !password) {
+            return [Error('Either a user or password were not sent.'), null];
+        }
         const searchedAdminUser = await new AdminUser({ username }).populate();
-        if (!(searchedAdminUser.username && searchedAdminUser.username === username)) {
-            return [Error('User does not exist.'), null];
+        if (!searchedAdminUser.username || !searchedAdminUser.password) {
+            return [Error('User and password combination do not exist.'), null];
         }
         const isMatchingPassword = await bcrypt_1.default.compare(password, searchedAdminUser.password);
         return isMatchingPassword

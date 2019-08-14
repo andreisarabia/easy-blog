@@ -57,7 +57,11 @@ class AdminRouter extends Router_1.default {
         const [loginErr, user] = await AdminUser_1.default.attempt_login(loginUsername, loginPassword);
         if (loginErr instanceof Error) {
             ctx.status = 403;
-            await this.send_login_page(ctx);
+            ctx.method = 'GET';
+            ctx.body = await super.render('login.ejs', {
+                csrf: ctx.csrf,
+                errors: [loginErr.message]
+            });
         }
         else {
             ctx.cookies.set(this.sessionCookieName, user.cookieId, this.sessionConfig);

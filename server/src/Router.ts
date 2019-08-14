@@ -4,12 +4,16 @@ import { promises as fs } from 'fs';
 import path from 'path';
 import { read_dir_recursively } from '../util/fns';
 
-const log = console.log;
-
 type RouterOptions = {
   templatePath?: string;
   prefix?: string;
 };
+type DefaultTemplateData = {
+  errors: string[];
+};
+
+const log = console.log;
+const defaultTemplateData: DefaultTemplateData = { errors: [] };
 
 export default class Router {
   protected instance: KoaRouter;
@@ -64,14 +68,20 @@ export default class Router {
       this.cachedTemplates.get(`${this.templatePath}${path.sep}template.ejs`),
       this.cachedTemplates.get(`${this.templatePath}${path.sep}${templateName}`)
     ]);
-    const { title = 'Easy Blog', csrf = '', ...restOfData } = data || {};
+
+    const { title = 'Easy Blog', csrf = '', ...requestedTemplateData } =
+      data || {};
+
     const template = await ejs.render(
       requestedTemplate,
-      { csrf, ...restOfData },
+      { csrf, ...defaultTemplateData, ...requestedTemplateData },
       { async: true }
     );
-    const universalData = { title, template, csrf };
 
-    return ejs.render(universalTemplate, universalData, { async: true });
+    return ejs.render(
+      universalTemplate,
+      { title, template, csrf },
+      { async: true }
+    );
   }
 }
