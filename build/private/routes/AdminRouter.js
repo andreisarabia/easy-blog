@@ -5,9 +5,10 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 const Router_1 = __importDefault(require("../../src/Router"));
 const AdminAPIRouter_1 = __importDefault(require("./api/AdminAPIRouter"));
+const BlogPost_1 = __importDefault(require("../models/BlogPost"));
 const AdminUser_1 = __importDefault(require("../models/AdminUser"));
 const log = console.log;
-const BASE_TITLE = '- Admin';
+const BASE_TITLE = '- Easy Blog Admin';
 const ONE_DAY_IN_MS = 86400;
 class AdminRouter extends Router_1.default {
     constructor() {
@@ -71,9 +72,9 @@ class AdminRouter extends Router_1.default {
     async register_user(ctx) {
         if (ctx.cookies.get(this.sessionCookieName))
             ctx.redirect('back', 'home');
-        const { registerUsername, registerPassword, email } = ctx.request
+        const { registerUsername, registerPassword, registerEmail } = ctx.request
             .body;
-        const [err, newUser] = await AdminUser_1.default.register(registerUsername, registerPassword, email, this.sessionCookieName);
+        const [err, newUser] = await AdminUser_1.default.register(registerUsername, registerPassword, registerEmail, this.sessionCookieName);
         if (err instanceof Error)
             ctx.throw(err.message, 401);
         ctx.cookies.set(this.sessionCookieName, newUser.cookieId, this.sessionConfig);
@@ -99,8 +100,8 @@ class AdminRouter extends Router_1.default {
                 data.editor = true;
                 break;
             case 'edit':
-                const blogId = +ctx.query.blogId;
-                ctx.assert(Number.isSafeInteger(blogId));
+                const { blogId } = ctx.query;
+                const blogPostToEdit = await BlogPost_1.default.find(blogId);
                 data.editor = true;
                 data.title = `Edit Post ${BASE_TITLE}`;
                 break;
@@ -108,7 +109,7 @@ class AdminRouter extends Router_1.default {
                 data.title = `Posts ${BASE_TITLE}`;
                 data.posts = [...this.blogCache.values()]
                     .slice(0, 10)
-                    .map((blogPost, i) => ({
+                    .map(blogPost => ({
                     id: blogPost.id,
                     title: blogPost.postTitle,
                     name: blogPost.author,

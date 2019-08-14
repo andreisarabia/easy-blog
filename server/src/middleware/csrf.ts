@@ -1,7 +1,7 @@
 import Koa from 'koa';
-import csrf from 'csrf';
+import csrf, { Options } from 'csrf';
 
-type CSRFOptions = {
+type CSRFUserOptions = {
   invalidTokenMessage?: Function | string;
   invalidTokenStatusCode?: number;
   excludedMethods?: string[];
@@ -11,53 +11,50 @@ type CSRFOptions = {
 const defaultCSRFOptions = {
   invalidTokenMessage: 'Invalid CSRF token',
   invalidTokenStatusCode: 403,
-  excludedMethods: ['GET', 'HEAD'],
+  excludedMethods: ['GET', 'HEAD', 'OPTIONS'],
   disableQuery: false
 };
-const Token = new csrf();
 
-const csrf_middleware = (options: CSRFOptions = {}) => {
-  const add_csrf_to_context = (ctx: Koa.ParameterizedContext): void => {
-    if (!ctx.csrf) {
-      Object.defineProperty(ctx, 'csrf', {
-        get() {
-          if (ctx._csrf) return ctx._csrf;
-          if (!ctx.session) return null;
-          if (!ctx.session.secret) ctx.session.secret = Token.secretSync();
-          ctx._csrf = Token.create(ctx.session.secret);
-          return ctx._csrf;
-        }
-      });
-      Object.defineProperty(ctx.response, 'csrf', {
-        get() {
-          return ctx.csrf;
-        }
-      });
-    }
-  };
-
+const csrf_middleware = (options: CSRFUserOptions = {}) => {
   options = { ...defaultCSRFOptions, ...options };
 
-  return async (ctx: Koa.ParameterizedContext, next: () => Promise<any>) => {
-    if (options.excludedMethods.includes(ctx.method)) return await next();
+  const Token = new csrf(options as Options);
 
+  const add_csrf_to_context = (ctx: Koa.ParameterizedContext): void => {
+    Object.defineProperty(ctx, 'csrf', {
+      get() {
+        if (ctx._csrf) return ctx._csrf;
+        if (!ctx.session) return null;
+        if (!ctx.session.secret) ctx.session.secret = Token.secretSync();
+        ctx._csrf = Token.create(ctx.session.secret);
+        return ctx._csrf;
+      }
+    });
+    Object.defineProperty(ctx.response, 'csrf', {
+      get() {
+        return ctx.csrf;
+      }
+    });
+  };
+
+  return async (ctx: Koa.ParameterizedContext, next: () => Promise<any>) => {
     add_csrf_to_context(ctx);
+
+    if (options.excludedMethods.includes(ctx.method)) return next();
 
     if (!ctx.session.secret) ctx.session.secret = await Token.secret();
 
-    const bodyToken =
+    let token: string =
       ctx.request.body && typeof ctx.request.body._csrf === 'string'
         ? ctx.request.body._csrf
         : null;
 
-    let token: string = null;
-
-    if (bodyToken) {
-      token = bodyToken;
-    } else if (!options.disableQuery && ctx.query && ctx.query._csrf) {
-      token = ctx.query._csrf;
-    } else {
-      token = ctx.get('csrf-token');
+    if (!token) {
+      if (!options.disableQuery && ctx.query && ctx.query._csrf) {
+        token = ctx.query._csrf;
+      } else {
+        token = ctx.get('csrf-token') || ctx.get('x-csrf-token');
+      }
     }
 
     if (!token || !Token.verify(ctx.session.secret, token)) {
@@ -69,7 +66,7 @@ const csrf_middleware = (options: CSRFOptions = {}) => {
       );
     }
 
-    return await next();
+    return next();
   };
 };
 

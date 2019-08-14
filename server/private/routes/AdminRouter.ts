@@ -5,7 +5,7 @@ import BlogPost from '../models/BlogPost';
 import AdminUser from '../models/AdminUser';
 
 const log = console.log;
-const BASE_TITLE = '- Admin';
+const BASE_TITLE = '- Easy Blog Admin';
 const ONE_DAY_IN_MS = 86400;
 
 type AdminLoginParameters = {
@@ -15,7 +15,7 @@ type AdminLoginParameters = {
 type AdminRegisterParameters = {
   registerUsername: string;
   registerPassword: string;
-  email: string;
+  registerEmail: string;
 };
 type AdminBlogPostQueryParameters = {
   action: 'new' | 'edit';
@@ -63,7 +63,6 @@ class AdminRouter extends Router {
 
   private async send_login_page(ctx: Koa.ParameterizedContext): Promise<void> {
     if (ctx.cookies.get(this.sessionCookieName)) ctx.redirect('home'); // reached login/register page, logged in
-
     ctx.body = await super.render('login.ejs', { csrf: ctx.csrf });
   }
 
@@ -104,13 +103,13 @@ class AdminRouter extends Router {
   private async register_user(ctx: Koa.ParameterizedContext): Promise<void> {
     if (ctx.cookies.get(this.sessionCookieName)) ctx.redirect('back', 'home'); // reached login/register page, logged in
 
-    const { registerUsername, registerPassword, email } = ctx.request
+    const { registerUsername, registerPassword, registerEmail } = ctx.request
       .body as AdminRegisterParameters;
 
     const [err, newUser] = await AdminUser.register(
       registerUsername,
       registerPassword,
-      email,
+      registerEmail,
       this.sessionCookieName
     );
 
@@ -146,19 +145,18 @@ class AdminRouter extends Router {
         data.editor = true;
         break;
       case 'edit':
-        const blogId = +ctx.query.blogId;
-        ctx.assert(Number.isSafeInteger(blogId));
+        const { blogId } = ctx.query;
+        const blogPostToEdit = await BlogPost.find(blogId);
+        
         data.editor = true;
         data.title = `Edit Post ${BASE_TITLE}`;
         break;
       case undefined:
         data.title = `Posts ${BASE_TITLE}`;
 
-        // console.log(this.blogCache);
-
         data.posts = [...this.blogCache.values()]
           .slice(0, 10)
-          .map((blogPost, i) => ({
+          .map(blogPost => ({
             id: blogPost.id,
             title: blogPost.postTitle,
             name: blogPost.author,

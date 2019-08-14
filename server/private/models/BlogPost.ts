@@ -1,5 +1,4 @@
 import Model from './Model';
-import { generate_random_int } from '../../util/primitives';
 
 type BlogPostParameters = {
   title: string;
@@ -15,7 +14,7 @@ export default class BlogPost extends Model {
   private penultimateId: string;
 
   constructor(props: BlogPostParameters) {
-    super('blog_posts', props);
+    super(BlogPost.collectionName, props);
   }
 
   public get info(): object {
@@ -46,6 +45,10 @@ export default class BlogPost extends Model {
     return this.penultimateId;
   }
 
+  private static get collectionName(): string {
+    return 'blog_posts';
+  }
+
   public async save(): Promise<BlogPost> {
     const [error, results] = await super.save({
       includeInResults: ['insertedId']
@@ -58,5 +61,17 @@ export default class BlogPost extends Model {
     this.props._id = results.insertedId;
 
     return this;
+  }
+
+  public static async find(id: string): Promise<BlogPost> {
+    const blogPostData = (await Model.find(
+      BlogPost.collectionName,
+      { id },
+      1
+    )) as BlogPostParameters;
+
+    return Object.keys(blogPostData).length === 0
+      ? null
+      : new BlogPost(blogPostData);
   }
 }

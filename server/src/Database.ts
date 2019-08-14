@@ -9,8 +9,8 @@ import {
 
 const dbMap: Map<string, Database> = new Map();
 const dbClient: Promise<MongoClient> = MongoClient.connect(
-  process.env.MONGO_URI || '',
-  { useNewUrlParser: true }
+  process.env.MONGO_URI || ' mongodb://127.0.0.1:27017/easy_blog',
+  { useNewUrlParser: true, useUnifiedTopology: true }
 );
 
 type QueryResults = {
@@ -20,20 +20,15 @@ type QueryResults = {
 };
 
 export default class Database {
-  private dbCollectionName: string;
+  private dbCollection: Promise<Collection>;
 
   private constructor({ dbCollectionName }: { dbCollectionName: string }) {
-    this.dbCollectionName = dbCollectionName;
+    this.dbCollection = new Promise(resolve =>
+      dbClient.then(client => resolve(client.db().collection(dbCollectionName)))
+    );
   }
 
-  private get dbCollection(): Promise<Collection> {
-    return new Promise(async resolve => {
-      const client = await dbClient;
-      resolve(client.db().collection(this.dbCollectionName));
-    });
-  }
-
-  public async shutdown(): Promise<[boolean, Error]> {
+  public static async shutdown_all_connections(): Promise<[boolean, Error]> {
     try {
       const client = await dbClient;
       await client.close();

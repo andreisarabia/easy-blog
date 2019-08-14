@@ -6,7 +6,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const Model_1 = __importDefault(require("./Model"));
 class BlogPost extends Model_1.default {
     constructor(props) {
-        super('blog_posts', props);
+        super(BlogPost.collectionName, props);
     }
     get info() {
         return { ...this.props };
@@ -29,6 +29,9 @@ class BlogPost extends Model_1.default {
     get previousId() {
         return this.penultimateId;
     }
+    static get collectionName() {
+        return 'blog_posts';
+    }
     async save() {
         const [error, results] = await super.save({
             includeInResults: ['insertedId']
@@ -39,6 +42,12 @@ class BlogPost extends Model_1.default {
             this.penultimateId = this.props._id;
         this.props._id = results.insertedId;
         return this;
+    }
+    static async find(id) {
+        const blogPostData = (await Model_1.default.find(BlogPost.collectionName, { id }, 1));
+        return Object.keys(blogPostData).length === 0
+            ? null
+            : new BlogPost(blogPostData);
     }
 }
 exports.default = BlogPost;
