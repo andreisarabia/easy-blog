@@ -17,7 +17,7 @@ type AdminBlogPostQueryParameters = {
   action: '';
 };
 
-export default class AdminAPIRouter extends Router {
+class AdminAPIRouter extends Router {
   public blogCache: Map<string, BlogPost> = new Map();
 
   constructor() {
@@ -71,7 +71,7 @@ export default class AdminAPIRouter extends Router {
 
   private async update_user_permissions(
     ctx: Koa.ParameterizedContext
-  ): Promise<void> {
-    
-  }
+  ): Promise<void> {}
 }
+
+export default new AdminAPIRouter();

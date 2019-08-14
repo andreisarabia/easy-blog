@@ -26,7 +26,7 @@ type AdminBlogPostActionData = {
   editor: boolean;
 };
 
-export default class AdminRouter extends Router {
+class AdminRouter extends Router {
   private readonly sessionCookieName = '_easy_blog_admin';
   private readonly sessionConfig = {
     httpOnly: true,
@@ -38,16 +38,14 @@ export default class AdminRouter extends Router {
   constructor() {
     super({ templatePath: 'private' });
 
-    const apiRouter = new AdminAPIRouter();
-
     this.instance
       .get('login', ctx => this.send_login_page(ctx))
       .get('logout', ctx => this.logout_user(ctx))
       .post('login', ctx => this.login_user(ctx))
       .post('register', ctx => this.register_user(ctx))
-      .use((ctx, next) => {
+      .use(async (ctx, next) => {
         if (ctx.cookies.get(this.sessionCookieName)) {
-          next();
+          await next();
         } else {
           ctx.redirect('login'); // tried to reach protected endpoints w/o valid cookie
         }
@@ -55,10 +53,10 @@ export default class AdminRouter extends Router {
       .get('home', ctx => this.send_home_page(ctx))
       .get('posts', ctx => this.send_posts_page(ctx))
       .post('reset-templates', ctx => this.refresh_templates(ctx))
-      .use(apiRouter.middleware.routes())
-      .use(apiRouter.middleware.allowedMethods());
+      .use(AdminAPIRouter.middleware.routes())
+      .use(AdminAPIRouter.middleware.allowedMethods());
 
-    this.blogCache = apiRouter.blogCache;
+    this.blogCache = AdminAPIRouter.blogCache;
 
     log('Admin paths:', this.allPaths);
   }
@@ -182,3 +180,5 @@ export default class AdminRouter extends Router {
     ctx.body = { msg: 'ok' };
   }
 }
+
+export default new AdminRouter();

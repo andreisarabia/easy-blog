@@ -24,7 +24,6 @@ class AdminApplication {
         return this.app;
     }
     setup_middlewares() {
-        const adminRouter = new AdminRouter_1.default();
         const cspDirectives = Object.entries(this.contentSecurityPolicy).reduce((cspString, [src, directives]) => {
             const preppedDirectives = directives
                 .map(directive => fns_1.is_url(directive) || directive.startsWith('.*')
@@ -55,8 +54,8 @@ class AdminApplication {
             }
             log(`${ctx.method} ${ctx.url} (${ctx.status}) - ${xResponseTime}ms`);
         })
-            .use(adminRouter.middleware.routes())
-            .use(adminRouter.middleware.allowedMethods())
+            .use(AdminRouter_1.default.middleware.routes())
+            .use(AdminRouter_1.default.middleware.allowedMethods())
             .use(koa_static_1.default(ADMIN_ASSETS_PATH, { defer: true }));
     }
 }

@@ -30,9 +30,7 @@ class UserApplication {
                 : `'${directive}'`)
                 .join(' ');
             const directiveRule = `${src} ${preppedDirectives}`;
-            return cspString
-                ? `${cspString}; ${directiveRule}`
-                : `${directiveRule}`;
+            return cspString ? `${cspString}; ${directiveRule}` : `${directiveRule}`;
         }, '');
         this.app.keys = ['easy-blog-visitor'];
         this.app

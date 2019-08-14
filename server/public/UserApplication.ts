@@ -23,23 +23,20 @@ class UserApplication {
   }
 
   private setup_middlewares(): void {
-    const cspDirectives = Object.entries(this.contentSecurityPolicy).reduce(
-      (cspString, [src, directives]) => {
-        const preppedDirectives = directives
-          .map(directive =>
-            is_url(directive) || directive.startsWith('.*')
-              ? directive
-              : `'${directive}'`
-          )
-          .join(' ');
-        const directiveRule = `${src} ${preppedDirectives}`;
+    const cspDirectives: string = Object.entries(
+      this.contentSecurityPolicy
+    ).reduce((cspString, [src, directives]) => {
+      const preppedDirectives = directives
+        .map(directive =>
+          is_url(directive) || directive.startsWith('.*')
+            ? directive
+            : `'${directive}'`
+        )
+        .join(' ');
+      const directiveRule = `${src} ${preppedDirectives}`;
 
-        return cspString
-          ? `${cspString}; ${directiveRule}`
-          : `${directiveRule}`;
-      },
-      ''
-    );
+      return cspString ? `${cspString}; ${directiveRule}` : `${directiveRule}`;
+    }, '');
 
     this.app.keys = ['easy-blog-visitor'];
 

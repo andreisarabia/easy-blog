@@ -24,7 +24,6 @@ class AdminApplication {
   }
 
   private setup_middlewares(): void {
-    const adminRouter = new AdminRouter();
     const cspDirectives = Object.entries(this.contentSecurityPolicy).reduce(
       (cspString, [src, directives]) => {
         const preppedDirectives = directives
@@ -69,8 +68,8 @@ class AdminApplication {
 
         log(`${ctx.method} ${ctx.url} (${ctx.status}) - ${xResponseTime}ms`);
       })
-      .use(adminRouter.middleware.routes())
-      .use(adminRouter.middleware.allowedMethods())
+      .use(AdminRouter.middleware.routes())
+      .use(AdminRouter.middleware.allowedMethods())
       .use(koaStatic(ADMIN_ASSETS_PATH, { defer: true }));
   }
 }

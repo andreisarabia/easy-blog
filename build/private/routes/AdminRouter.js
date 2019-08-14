@@ -18,15 +18,14 @@ class AdminRouter extends Router_1.default {
             signed: true,
             maxAge: process.env.NODE_ENV !== 'production' ? undefined : ONE_DAY_IN_MS
         };
-        const apiRouter = new AdminAPIRouter_1.default();
         this.instance
             .get('login', ctx => this.send_login_page(ctx))
             .get('logout', ctx => this.logout_user(ctx))
             .post('login', ctx => this.login_user(ctx))
             .post('register', ctx => this.register_user(ctx))
-            .use((ctx, next) => {
+            .use(async (ctx, next) => {
             if (ctx.cookies.get(this.sessionCookieName)) {
-                next();
+                await next();
             }
             else {
                 ctx.redirect('login');
@@ -35,9 +34,9 @@ class AdminRouter extends Router_1.default {
             .get('home', ctx => this.send_home_page(ctx))
             .get('posts', ctx => this.send_posts_page(ctx))
             .post('reset-templates', ctx => this.refresh_templates(ctx))
-            .use(apiRouter.middleware.routes())
-            .use(apiRouter.middleware.allowedMethods());
-        this.blogCache = apiRouter.blogCache;
+            .use(AdminAPIRouter_1.default.middleware.routes())
+            .use(AdminAPIRouter_1.default.middleware.allowedMethods());
+        this.blogCache = AdminAPIRouter_1.default.blogCache;
         log('Admin paths:', this.allPaths);
     }
     async send_login_page(ctx) {
@@ -127,4 +126,4 @@ class AdminRouter extends Router_1.default {
         ctx.body = { msg: 'ok' };
     }
 }
-exports.default = AdminRouter;
+exports.default = new AdminRouter();
