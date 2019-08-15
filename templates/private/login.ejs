@@ -1,5 +1,8 @@
 <section id="admin-login">
   <h2>Login</h2>
+  <% if (errors.length > 0) { %> <% for (const error of errors) { %>
+  <h3 style="color: red;"><%= error %></h3>
+  <% } %> <% } %>
   <form action="login" method="POST">
     <input type="hidden" name="_csrf" value="<%= csrf %>" />
     <input type="text" name="loginUsername" />
@@ -9,8 +12,16 @@
   <h2>Register</h2>
   <form action="register" method="POST">
     <input type="hidden" name="_csrf" value="<%= csrf %>" />
-    <input type="text" name="registerUsername" />
-    <input type="password" name="registerPassword" id="" />
+    <input type="text" name="registerUsername" minlength="5" required />
+    <input type="email" name="registerEmail" maxlength="256" required />
+    <input
+      type="password"
+      name="registerPassword"
+      minlength="13"
+      maxlength="55"
+      required
+    />
+
     <input type="submit" value="Submit" />
   </form>
 </section>

@@ -4,10 +4,9 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const koa_1 = __importDefault(require("koa"));
-const koa_body_1 = __importDefault(require("koa-body"));
-const koa_csrf_1 = __importDefault(require("koa-csrf"));
 const koa_static_1 = __importDefault(require("koa-static"));
 const AdminRouter_1 = __importDefault(require("./routes/AdminRouter"));
+const csrf_1 = __importDefault(require("../src/middleware/csrf"));
 const fns_1 = require("../util/fns");
 const ADMIN_ASSETS_PATH = 'templates/private/assets';
 const log = console.log;
@@ -25,9 +24,8 @@ class AdminApplication {
     get middleware() {
         return this.app;
     }
-    setup_middlewares() {
-        const adminRouter = new AdminRouter_1.default();
-        const cspDirectives = Object.entries(this.contentSecurityPolicy).reduce((cspString, [src, directives]) => {
+    get cspString() {
+        return Object.entries(this.contentSecurityPolicy).reduce((cspString, [src, directives]) => {
             const preppedDirectives = directives
                 .map(directive => fns_1.is_url(directive) || directive.startsWith('.*')
                 ? directive
@@ -38,10 +36,12 @@ class AdminApplication {
                 ? `${cspString}; ${directiveRule}`
                 : `${directiveRule}`;
         }, '');
+    }
+    setup_middlewares() {
+        const cspDirectives = this.cspString;
         this.app.keys = ['easy-blog-admin'];
         this.app
-            .use(koa_body_1.default({ json: true, multipart: true }))
-            .use(new koa_csrf_1.default())
+            .use(csrf_1.default())
             .use(async (ctx, next) => {
             const start = Date.now();
             ctx.set({
@@ -59,9 +59,9 @@ class AdminApplication {
             }
             log(`${ctx.method} ${ctx.url} (${ctx.status}) - ${xResponseTime}ms`);
         })
-            .use(adminRouter.middleware.routes())
-            .use(adminRouter.middleware.allowedMethods())
+            .use(AdminRouter_1.default.middleware.routes())
+            .use(AdminRouter_1.default.middleware.allowedMethods())
             .use(koa_static_1.default(ADMIN_ASSETS_PATH, { defer: true }));
     }
 }
-exports.default = AdminApplication;
+exports.default = new AdminApplication();

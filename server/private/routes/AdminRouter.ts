@@ -5,7 +5,7 @@ import BlogPost from '../models/BlogPost';
 import AdminUser from '../models/AdminUser';
 
 const log = console.log;
-const BASE_TITLE = '- Admin';
+const BASE_TITLE = '- Easy Blog Admin';
 const ONE_DAY_IN_MS = 86400;
 
 type AdminLoginParameters = {
@@ -15,7 +15,7 @@ type AdminLoginParameters = {
 type AdminRegisterParameters = {
   registerUsername: string;
   registerPassword: string;
-  email: string;
+  registerEmail: string;
 };
 type AdminBlogPostQueryParameters = {
   action: 'new' | 'edit';
@@ -26,8 +26,8 @@ type AdminBlogPostActionData = {
   editor: boolean;
 };
 
-export default class AdminRouter extends Router {
-  private readonly sessionCookieName = 'easy-blog-admin:sess';
+class AdminRouter extends Router {
+  private readonly sessionCookieName = '_easy_blog_admin';
   private readonly sessionConfig = {
     httpOnly: true,
     signed: true,
@@ -38,16 +38,14 @@ export default class AdminRouter extends Router {
   constructor() {
     super({ templatePath: 'private' });
 
-    const apiRouter = new AdminAPIRouter();
-
     this.instance
       .get('login', ctx => this.send_login_page(ctx))
       .get('logout', ctx => this.logout_user(ctx))
       .post('login', ctx => this.login_user(ctx))
       .post('register', ctx => this.register_user(ctx))
-      .use((ctx, next) => {
+      .use(async (ctx, next) => {
         if (ctx.cookies.get(this.sessionCookieName)) {
-          next();
+          await next();
         } else {
           ctx.redirect('login'); // tried to reach protected endpoints w/o valid cookie
         }
@@ -55,17 +53,16 @@ export default class AdminRouter extends Router {
       .get('home', ctx => this.send_home_page(ctx))
       .get('posts', ctx => this.send_posts_page(ctx))
       .post('reset-templates', ctx => this.refresh_templates(ctx))
-      .use(apiRouter.middleware.routes())
-      .use(apiRouter.middleware.allowedMethods());
+      .use(AdminAPIRouter.middleware.routes())
+      .use(AdminAPIRouter.middleware.allowedMethods());
 
-    this.blogCache = apiRouter.blogCache;
+    this.blogCache = AdminAPIRouter.blogCache;
 
     log('Admin paths:', this.allPaths);
   }
 
   private async send_login_page(ctx: Koa.ParameterizedContext): Promise<void> {
     if (ctx.cookies.get(this.sessionCookieName)) ctx.redirect('home'); // reached login/register page, logged in
-
     ctx.body = await super.render('login.ejs', { csrf: ctx.csrf });
   }
 
@@ -88,7 +85,11 @@ export default class AdminRouter extends Router {
 
     if (loginErr instanceof Error) {
       ctx.status = 403;
-      await this.send_login_page(ctx);
+      ctx.method = 'GET';
+      ctx.body = await super.render('login.ejs', {
+        csrf: ctx.csrf,
+        errors: [loginErr.message]
+      });
     } else {
       ctx.cookies.set(
         this.sessionCookieName,
@@ -102,13 +103,13 @@ export default class AdminRouter extends Router {
   private async register_user(ctx: Koa.ParameterizedContext): Promise<void> {
     if (ctx.cookies.get(this.sessionCookieName)) ctx.redirect('back', 'home'); // reached login/register page, logged in
 
-    const { registerUsername, registerPassword, email } = ctx.request
+    const { registerUsername, registerPassword, registerEmail } = ctx.request
       .body as AdminRegisterParameters;
 
     const [err, newUser] = await AdminUser.register(
       registerUsername,
       registerPassword,
-      email,
+      registerEmail,
       this.sessionCookieName
     );
 
@@ -144,19 +145,18 @@ export default class AdminRouter extends Router {
         data.editor = true;
         break;
       case 'edit':
-        const blogId = +ctx.query.blogId;
-        ctx.assert(Number.isSafeInteger(blogId));
+        const { blogId } = ctx.query;
+        const blogPostToEdit = await BlogPost.find(blogId);
+        
         data.editor = true;
         data.title = `Edit Post ${BASE_TITLE}`;
         break;
       case undefined:
         data.title = `Posts ${BASE_TITLE}`;
 
-        // console.log(this.blogCache);
-
         data.posts = [...this.blogCache.values()]
           .slice(0, 10)
-          .map((blogPost, i) => ({
+          .map(blogPost => ({
             id: blogPost.id,
             title: blogPost.postTitle,
             name: blogPost.author,
@@ -182,3 +182,5 @@ export default class AdminRouter extends Router {
     ctx.body = { msg: 'ok' };
   }
 }
+
+export default new AdminRouter();

@@ -5,28 +5,28 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 const Router_1 = __importDefault(require("../../src/Router"));
 const AdminAPIRouter_1 = __importDefault(require("./api/AdminAPIRouter"));
+const BlogPost_1 = __importDefault(require("../models/BlogPost"));
 const AdminUser_1 = __importDefault(require("../models/AdminUser"));
 const log = console.log;
-const BASE_TITLE = '- Admin';
+const BASE_TITLE = '- Easy Blog Admin';
 const ONE_DAY_IN_MS = 86400;
 class AdminRouter extends Router_1.default {
     constructor() {
         super({ templatePath: 'private' });
-        this.sessionCookieName = 'easy-blog-admin:sess';
+        this.sessionCookieName = '_easy_blog_admin';
         this.sessionConfig = {
             httpOnly: true,
             signed: true,
             maxAge: process.env.NODE_ENV !== 'production' ? undefined : ONE_DAY_IN_MS
         };
-        const apiRouter = new AdminAPIRouter_1.default();
         this.instance
             .get('login', ctx => this.send_login_page(ctx))
             .get('logout', ctx => this.logout_user(ctx))
             .post('login', ctx => this.login_user(ctx))
             .post('register', ctx => this.register_user(ctx))
-            .use((ctx, next) => {
+            .use(async (ctx, next) => {
             if (ctx.cookies.get(this.sessionCookieName)) {
-                next();
+                await next();
             }
             else {
                 ctx.redirect('login');
@@ -35,9 +35,9 @@ class AdminRouter extends Router_1.default {
             .get('home', ctx => this.send_home_page(ctx))
             .get('posts', ctx => this.send_posts_page(ctx))
             .post('reset-templates', ctx => this.refresh_templates(ctx))
-            .use(apiRouter.middleware.routes())
-            .use(apiRouter.middleware.allowedMethods());
-        this.blogCache = apiRouter.blogCache;
+            .use(AdminAPIRouter_1.default.middleware.routes())
+            .use(AdminAPIRouter_1.default.middleware.allowedMethods());
+        this.blogCache = AdminAPIRouter_1.default.blogCache;
         log('Admin paths:', this.allPaths);
     }
     async send_login_page(ctx) {
@@ -58,7 +58,11 @@ class AdminRouter extends Router_1.default {
         const [loginErr, user] = await AdminUser_1.default.attempt_login(loginUsername, loginPassword);
         if (loginErr instanceof Error) {
             ctx.status = 403;
-            await this.send_login_page(ctx);
+            ctx.method = 'GET';
+            ctx.body = await super.render('login.ejs', {
+                csrf: ctx.csrf,
+                errors: [loginErr.message]
+            });
         }
         else {
             ctx.cookies.set(this.sessionCookieName, user.cookieId, this.sessionConfig);
@@ -68,9 +72,9 @@ class AdminRouter extends Router_1.default {
     async register_user(ctx) {
         if (ctx.cookies.get(this.sessionCookieName))
             ctx.redirect('back', 'home');
-        const { registerUsername, registerPassword, email } = ctx.request
+        const { registerUsername, registerPassword, registerEmail } = ctx.request
             .body;
-        const [err, newUser] = await AdminUser_1.default.register(registerUsername, registerPassword, email, this.sessionCookieName);
+        const [err, newUser] = await AdminUser_1.default.register(registerUsername, registerPassword, registerEmail, this.sessionCookieName);
         if (err instanceof Error)
             ctx.throw(err.message, 401);
         ctx.cookies.set(this.sessionCookieName, newUser.cookieId, this.sessionConfig);
@@ -96,8 +100,8 @@ class AdminRouter extends Router_1.default {
                 data.editor = true;
                 break;
             case 'edit':
-                const blogId = +ctx.query.blogId;
-                ctx.assert(Number.isSafeInteger(blogId));
+                const { blogId } = ctx.query;
+                const blogPostToEdit = await BlogPost_1.default.find(blogId);
                 data.editor = true;
                 data.title = `Edit Post ${BASE_TITLE}`;
                 break;
@@ -105,7 +109,7 @@ class AdminRouter extends Router_1.default {
                 data.title = `Posts ${BASE_TITLE}`;
                 data.posts = [...this.blogCache.values()]
                     .slice(0, 10)
-                    .map((blogPost, i) => ({
+                    .map(blogPost => ({
                     id: blogPost.id,
                     title: blogPost.postTitle,
                     name: blogPost.author,
@@ -127,4 +131,4 @@ class AdminRouter extends Router_1.default {
         ctx.body = { msg: 'ok' };
     }
 }
-exports.default = AdminRouter;
+exports.default = new AdminRouter();

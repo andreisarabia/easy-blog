@@ -4,5 +4,4 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const AdminRouter_1 = __importDefault(require("./AdminRouter"));
-const routes = [new AdminRouter_1.default()];
-exports.default = routes;
+exports.default = [AdminRouter_1.default];

@@ -1,14 +1,13 @@
 import Koa from 'koa';
-import koaBody from 'koa-body';
-import KoaCSRF from 'koa-csrf';
 import koaStatic from 'koa-static';
 import AdminRouter from './routes/AdminRouter';
+import csrf_middleware from '../src/middleware/csrf';
 import { is_url } from '../util/fns';
 
 const ADMIN_ASSETS_PATH = 'templates/private/assets';
 const log = console.log;
 
-export default class AdminApplication {
+class AdminApplication {
   private app = new Koa();
   private readonly contentSecurityPolicy = {
     'default-src': ['self'],
@@ -21,13 +20,12 @@ export default class AdminApplication {
     this.setup_middlewares();
   }
 
-  public get middleware() {
+  public get middleware(): Koa {
     return this.app;
   }
 
-  private setup_middlewares(): void {
-    const adminRouter = new AdminRouter();
-    const cspDirectives = Object.entries(this.contentSecurityPolicy).reduce(
+  private get cspString(): string {
+    return Object.entries(this.contentSecurityPolicy).reduce(
       (cspString, [src, directives]) => {
         const preppedDirectives = directives
           .map(directive =>
@@ -44,12 +42,15 @@ export default class AdminApplication {
       },
       ''
     );
+  }
+
+  private setup_middlewares(): void {
+    const cspDirectives = this.cspString;
 
     this.app.keys = ['easy-blog-admin'];
 
     this.app
-      .use(koaBody({ json: true, multipart: true }))
-      .use(new KoaCSRF())
+      .use(csrf_middleware())
       .use(async (ctx, next) => {
         const start = Date.now();
 
@@ -73,8 +74,10 @@ export default class AdminApplication {
 
         log(`${ctx.method} ${ctx.url} (${ctx.status}) - ${xResponseTime}ms`);
       })
-      .use(adminRouter.middleware.routes())
-      .use(adminRouter.middleware.allowedMethods())
+      .use(AdminRouter.middleware.routes())
+      .use(AdminRouter.middleware.allowedMethods())
       .use(koaStatic(ADMIN_ASSETS_PATH, { defer: true }));
   }
 }
+
+export default new AdminApplication();

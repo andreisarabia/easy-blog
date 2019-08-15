@@ -44,7 +44,6 @@ class AdminAPIRouter extends Router_1.default {
     async act_on_post(ctx) {
         const { action } = ctx.request.body;
     }
-    async update_user_permissions(ctx) {
-    }
+    async update_user_permissions(ctx) { }
 }
-exports.default = AdminAPIRouter;
+exports.default = new AdminAPIRouter();

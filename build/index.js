@@ -7,21 +7,25 @@ require('dotenv').config();
 const koa_1 = __importDefault(require("koa"));
 const koa_mount_1 = __importDefault(require("koa-mount"));
 const koa_session_1 = __importDefault(require("koa-session"));
+const koa_body_1 = __importDefault(require("koa-body"));
 const AdminApplication_1 = __importDefault(require("./private/AdminApplication"));
+const UserApplication_1 = __importDefault(require("./public/UserApplication"));
 const main = async () => {
-    const adminApp = new AdminApplication_1.default();
     const app = new koa_1.default();
     const appPort = +process.env.PORT || 3000;
-    app.keys = ['easy-blog-visitor'];
-    app
-        .use(koa_session_1.default({
-        key: 'eb-visitor',
+    const sessionConfig = {
+        key: '_easy_blog',
         maxAge: 100000,
         overwrite: true,
         signed: true,
         httpOnly: true
-    }, app))
-        .use(koa_mount_1.default('/admin', adminApp.middleware))
+    };
+    app.keys = ['easy-blog-visitor'];
+    app
+        .use(koa_session_1.default(sessionConfig, app))
+        .use(koa_body_1.default({ json: true, multipart: true }))
+        .use(koa_mount_1.default('/', UserApplication_1.default.middleware))
+        .use(koa_mount_1.default('/admin', AdminApplication_1.default.middleware))
         .listen(appPort, () => console.log('Listening...'));
 };
 main().catch(console.error);

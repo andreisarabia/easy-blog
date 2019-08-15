@@ -8,10 +8,13 @@ const v4_1 = __importDefault(require("uuid/v4"));
 const Model_1 = __importDefault(require("./Model"));
 const validator_1 = require("../../util/validator");
 const SALT_ROUNDS = 10;
-const is_valid_password = (pass) => pass.length >= 2 && pass.length <= 55;
+const MIN_USERNAME_LENGTH = 5;
+const MAX_USERNAME_LENGTH = 35;
+const MIN_PASSWORD_LENGTH = 13;
+const MAX_PASSWORD_LENGTH = 55;
 class AdminUser extends Model_1.default {
     constructor(props) {
-        super('admin_users', props);
+        super(AdminUser.collectionName, props);
     }
     get password() {
         return this.props.password;
@@ -25,6 +28,9 @@ class AdminUser extends Model_1.default {
     get cookieId() {
         return this.props.cookie;
     }
+    static get collectionName() {
+        return 'admin_users';
+    }
     async save() {
         const [error, results] = await super.save({
             includeInResults: ['insertedId']
@@ -34,18 +40,17 @@ class AdminUser extends Model_1.default {
         this.props._id = results.insertedId;
         return this;
     }
-    async populate() {
-        const criteria = this.username
-            ? { username: this.username }
-            : { email: this.email };
-        const doc = (await super.find(criteria, 1));
-        this.props = { ...doc };
-        return this;
+    static async find(username) {
+        const doc = (await Model_1.default.find(AdminUser.collectionName, { username }, 1));
+        return Object.keys(doc).length === 0 ? null : new AdminUser(doc);
     }
     static async attempt_login(username, password) {
-        const searchedAdminUser = await new AdminUser({ username }).populate();
-        if (!(searchedAdminUser.username && searchedAdminUser.username === username)) {
-            return [Error('User does not exist.'), null];
+        if (!username || !password) {
+            return [Error('Either a username or password were not submitted.'), null];
+        }
+        const searchedAdminUser = await AdminUser.find(username);
+        if (!searchedAdminUser.username || !searchedAdminUser.password) {
+            return [Error('User and password combination do not exist.'), null];
         }
         const isMatchingPassword = await bcrypt_1.default.compare(password, searchedAdminUser.password);
         return isMatchingPassword
@@ -53,14 +58,11 @@ class AdminUser extends Model_1.default {
             : [Error('User and password combination do not exist.'), null];
     }
     static async register(username, password, email, cookieName) {
-        const [hasErr, ...errs] = await AdminUser.validate_credentials(username, password);
-        if (hasErr)
+        const errs = await AdminUser.validate_credentials(username, password, email);
+        if (errs.length > 0)
             return [Error(errs.join('\n')), null];
-        const adminUserParams = {
-            username,
-            password: await bcrypt_1.default.hash(password, SALT_ROUNDS),
-            email
-        };
+        password = await bcrypt_1.default.hash(password, SALT_ROUNDS);
+        const adminUserParams = { username, password, email };
         if (cookieName) {
             adminUserParams.cookie = v4_1.default();
             adminUserParams.cookieName = cookieName;
@@ -68,25 +70,38 @@ class AdminUser extends Model_1.default {
         const newlyRegisteredUser = await new AdminUser(adminUserParams).save();
         return [null, newlyRegisteredUser];
     }
-    static async validate_credentials(username, password) {
-        if (await AdminUser.exists(username)) {
-            return [true, 'Username is not valid.'];
-        }
+    static async validate_credentials(username, password, email) {
+        if (await AdminUser.exists(username))
+            return ['Username is not valid.'];
         const errors = [];
-        if (username.length > 35) {
-            errors.push('Username must be fewer than 35 characters.');
+        if (username.length > MAX_USERNAME_LENGTH) {
+            errors.push(`Username must be fewer than ${MAX_USERNAME_LENGTH} characters.`);
+        }
+        else if (username.length < MIN_USERNAME_LENGTH) {
+            errors.push(`Username must be more than ${MIN_USERNAME_LENGTH} characters.`);
         }
         if (!validator_1.is_alphanumeric(username)) {
             errors.push('Username must contain only alphanumeric characters.');
         }
-        if (!is_valid_password(password)) {
-            errors.push('Password is too short or too long.');
+        if (password.length > MAX_PASSWORD_LENGTH) {
+            errors.push(`Password must be fewer than ${MAX_PASSWORD_LENGTH} characters.`);
         }
-        return errors.length > 0 ? [true, ...errors] : [false, null];
+        else if (password.length < MIN_PASSWORD_LENGTH) {
+            errors.push(`Password must be more than ${MIN_PASSWORD_LENGTH} characters.`);
+        }
+        if (!validator_1.is_email(email)) {
+            errors.push(`The provided email is formatted incorrectly.`);
+        }
+        return errors;
     }
     static async exists(username) {
-        const searchedAdminUser = await new AdminUser({ username }).populate();
-        return Boolean(searchedAdminUser.username && searchedAdminUser.email);
+        try {
+            const searchedAdminUser = await AdminUser.find(username);
+            return Boolean(searchedAdminUser.username && searchedAdminUser.email);
+        }
+        catch (error) {
+            return false;
+        }
     }
 }
 exports.default = AdminUser;

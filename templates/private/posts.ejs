@@ -1,4 +1,17 @@
 <section id="admin-posts">
+  <style>
+    div#posts-columns,
+    div.post {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+    }
+    div.post-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+  </style>
+
   <div id="posts-header">
     <div class="post-header">
       <h2><%= headerTitle %></h2>
@@ -19,20 +32,20 @@
       <h3>Date</h3>
     </div>
     <div id="posts">
-      <% posts.forEach(post => { %>
+      <% for (const post of posts) { %>
       <div class="post">
         <h3><%= post.title %></h3>
         <h3><%= post.name %></h3>
         <div><%- post.snippet %></div>
         <h3><%= post.date.toLocaleString() %></h3>
       </div>
-      <% }) %>
+      <% } %>
     </div>
     <% } else if (editor) { %>
     <link rel="stylesheet" href="css/quill.core.css" />
     <link rel="stylesheet" href="css/quill.snow.css" />
 
-    <input type="text" name="post-title" id="post-title">
+    <input type="text" name="post-title" id="post-title" />
     <div class="posts-editor">
       <div id="editor"></div>
       <button type="button" name="submit-content">Submit Content</button>
@@ -42,16 +55,4 @@
     <script src="js/editor.js" defer></script>
     <% } %>
   </div>
-  <style>
-    div#posts-columns,
-    div.post {
-      display: grid;
-      grid-template-columns: repeat(4, 1fr);
-    }
-    div.post-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-  </style>
 </section>

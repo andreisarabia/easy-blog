@@ -2,18 +2,12 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 const mongodb_1 = require("mongodb");
 const dbMap = new Map();
-const dbClient = mongodb_1.MongoClient.connect(process.env.MONGO_URI || '', { useNewUrlParser: true });
+const dbClient = mongodb_1.MongoClient.connect(process.env.MONGO_URI || ' mongodb://127.0.0.1:27017/easy_blog', { useNewUrlParser: true, useUnifiedTopology: true });
 class Database {
     constructor({ dbCollectionName }) {
-        this.dbCollectionName = dbCollectionName;
+        this.dbCollection = new Promise(resolve => dbClient.then(client => resolve(client.db().collection(dbCollectionName))));
     }
-    get dbCollection() {
-        return new Promise(async (resolve) => {
-            const client = await dbClient;
-            resolve(client.db().collection(this.dbCollectionName));
-        });
-    }
-    async shutdown() {
+    static async shutdown_all_connections() {
         try {
             const client = await dbClient;
             await client.close();

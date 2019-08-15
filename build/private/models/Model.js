@@ -12,8 +12,8 @@ class Model {
     async save({ includeInResults }) {
         return this.db.insert(this.props, includeInResults);
     }
-    async find(criteria, limit = 0) {
-        return this.db.find(criteria, { limit });
+    static async find(collection, criteria, limit = 0) {
+        return Database_1.default.instance(collection).find(criteria, { limit });
     }
     valueOf() {
         return this.props;
