@@ -70,8 +70,6 @@ export default class BlogPost extends Model {
       1
     )) as BlogPostParameters;
 
-    return Object.keys(blogPostData).length === 0
-      ? null
-      : new BlogPost(blogPostData);
+    return blogPostData ? new BlogPost(blogPostData) : null;
   }
 }

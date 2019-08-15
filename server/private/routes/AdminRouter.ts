@@ -2,7 +2,7 @@ import Koa from 'koa';
 import Router from '../../src/Router';
 import AdminAPIRouter from './api/AdminAPIRouter';
 import BlogPost from '../models/BlogPost';
-import AdminUser from '../models/AdminUser';
+import AdminUser, { AdminUserParameters } from '../models/AdminUser';
 
 const log = console.log;
 const BASE_TITLE = '- Easy Blog Admin';
@@ -11,11 +11,6 @@ const ONE_DAY_IN_MS = 86400;
 type AdminLoginParameters = {
   loginUsername: string;
   loginPassword: string;
-};
-type AdminRegisterParameters = {
-  registerUsername: string;
-  registerPassword: string;
-  registerEmail: string;
 };
 type AdminBlogPostQueryParameters = {
   action: 'new' | 'edit';
@@ -45,6 +40,7 @@ class AdminRouter extends Router {
       .post('register', ctx => this.register_user(ctx))
       .use(async (ctx, next) => {
         if (ctx.cookies.get(this.sessionCookieName)) {
+          ctx.set('Cache-Control', 'no-cache');
           await next();
         } else {
           ctx.redirect('login'); // tried to reach protected endpoints w/o valid cookie
@@ -103,15 +99,15 @@ class AdminRouter extends Router {
   private async register_user(ctx: Koa.ParameterizedContext): Promise<void> {
     if (ctx.cookies.get(this.sessionCookieName)) ctx.redirect('back', 'home'); // reached login/register page, logged in
 
-    const { registerUsername, registerPassword, registerEmail } = ctx.request
-      .body as AdminRegisterParameters;
+    const { username, email, password } = ctx.request
+      .body as AdminUserParameters;
 
-    const [err, newUser] = await AdminUser.register(
-      registerUsername,
-      registerPassword,
-      registerEmail,
-      this.sessionCookieName
-    );
+    const [err, newUser] = await AdminUser.register({
+      username,
+      email,
+      password,
+      cookieName: this.sessionCookieName
+    });
 
     if (err instanceof Error) ctx.throw(err.message, 401);
 
@@ -147,7 +143,7 @@ class AdminRouter extends Router {
       case 'edit':
         const { blogId } = ctx.query;
         const blogPostToEdit = await BlogPost.find(blogId);
-        
+
         data.editor = true;
         data.title = `Edit Post ${BASE_TITLE}`;
         break;

@@ -12,11 +12,11 @@
   <h2>Register</h2>
   <form action="register" method="POST">
     <input type="hidden" name="_csrf" value="<%= csrf %>" />
-    <input type="text" name="registerUsername" minlength="5" required />
-    <input type="email" name="registerEmail" maxlength="256" required />
+    <input type="text" name="username" minlength="5" required />
+    <input type="email" name="email" maxlength="256" required />
     <input
       type="password"
-      name="registerPassword"
+      name="password"
       minlength="13"
       maxlength="55"
       required

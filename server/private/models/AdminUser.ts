@@ -9,7 +9,7 @@ const MAX_USERNAME_LENGTH = 35;
 const MIN_PASSWORD_LENGTH = 13;
 const MAX_PASSWORD_LENGTH = 55;
 
-type AdminUserParameters = {
+export type AdminUserParameters = {
   username: string;
   password?: string;
   email?: string;
@@ -64,7 +64,7 @@ export default class AdminUser extends Model {
       1
     )) as AdminUserParameters;
 
-    return Object.keys(doc).length === 0 ? null : new AdminUser(doc);
+    return doc ? new AdminUser(doc) : null;
   }
 
   public static async attempt_login(
@@ -77,7 +77,7 @@ export default class AdminUser extends Model {
 
     const searchedAdminUser = await AdminUser.find(username);
 
-    if (!searchedAdminUser.username || !searchedAdminUser.password) {
+    if (!searchedAdminUser || !searchedAdminUser.username) {
       return [Error('User and password combination do not exist.'), null];
     }
 
@@ -91,12 +91,12 @@ export default class AdminUser extends Model {
       : [Error('User and password combination do not exist.'), null];
   }
 
-  public static async register(
-    username: string,
-    password: string,
-    email: string,
-    cookieName?: string
-  ): Promise<[Error, AdminUser]> {
+  public static async register({
+    username,
+    email,
+    password,
+    cookieName
+  }: AdminUserParameters): Promise<[Error, AdminUser]> {
     const errs = await AdminUser.validate_credentials(
       username,
       password,
@@ -105,16 +105,14 @@ export default class AdminUser extends Model {
 
     if (errs.length > 0) return [Error(errs.join('\n')), null];
 
-    password = await bcrypt.hash(password, SALT_ROUNDS);
-
-    const adminUserParams: AdminUserParameters = { username, password, email };
-
-    if (cookieName) {
-      adminUserParams.cookie = uuid();
-      adminUserParams.cookieName = cookieName;
-    }
-
-    const newlyRegisteredUser = await new AdminUser(adminUserParams).save();
+    const hash = await bcrypt.hash(password, SALT_ROUNDS);
+    const newlyRegisteredUser = await new AdminUser({
+      username,
+      password: hash,
+      email,
+      cookieName,
+      cookie: cookieName ? uuid() : undefined
+    }).save();
 
     return [null, newlyRegisteredUser];
   }
