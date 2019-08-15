@@ -29,7 +29,7 @@ export default class AdminUser extends Model {
     return this.props.password;
   }
 
-  private get username(): string {
+  public get username(): string {
     return this.props.username;
   }
 
