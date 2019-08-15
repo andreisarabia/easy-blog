@@ -37,7 +37,7 @@
     "@types/koa-session": "^5.10.1",
     "@types/koa-static": "^4.0.1",
     "@types/mongodb": "^3.2.2",
-    "@types/node": "^12.7.1",
+    "@types/node": "^12.7.2",
     "@types/uuid": "^3.4.5",
     "cross-env": "^5.2.0",
     "nodemon": "^1.19.1"
