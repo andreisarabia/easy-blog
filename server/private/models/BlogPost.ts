@@ -1,5 +1,7 @@
 import Model from './Model';
 
+const COLLECTION_NAME = 'blog_posts';
+
 type BlogPostParameters = {
   title: string;
   author: string;
@@ -46,7 +48,7 @@ export default class BlogPost extends Model {
   }
 
   private static get collectionName(): string {
-    return 'blog_posts';
+    return COLLECTION_NAME;
   }
 
   public async save(): Promise<BlogPost> {
@@ -64,11 +66,11 @@ export default class BlogPost extends Model {
   }
 
   public static async find(id: string): Promise<BlogPost> {
-    const blogPostData = (await Model.find(
-      BlogPost.collectionName,
-      { id },
-      1
-    )) as BlogPostParameters;
+    const blogPostData = (await Model.search({
+      collection: BlogPost.collectionName,
+      criteria: { id },
+      limit: 1
+    })) as BlogPostParameters;
 
     return blogPostData ? new BlogPost(blogPostData) : null;
   }
