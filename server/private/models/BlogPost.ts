@@ -2,7 +2,7 @@ import Model from './Model';
 
 const COLLECTION_NAME = 'blog_posts';
 
-type BlogPostParameters = {
+export type BlogPostParameters = {
   title: string;
   author: string;
   timestamp: Date;

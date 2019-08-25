@@ -11,6 +11,8 @@ const TEN_MIN_IN_MS = 600000;
 
 type AdminBlogPostQueryParameters = {
   action: 'new' | 'edit';
+  pageNum: number;
+  blogId: string;
 };
 type AdminBlogPostActionData = {
   title: string;
@@ -38,7 +40,6 @@ class AdminRouter extends Router {
       .use(async (ctx, next) => {
         if (!this.is_logged_in(ctx)) return ctx.redirect('login');
 
-        ctx.set('Cache-Control', 'no-cache');
         await next();
       })
       .get('home', ctx => this.send_home_page(ctx))
@@ -143,13 +144,18 @@ class AdminRouter extends Router {
         data.editor = true;
         break;
       case 'edit':
-        const { blogId } = ctx.query;
+        const { blogId } = ctx.query as AdminBlogPostQueryParameters;
         const blogPostToEdit = await BlogPost.find(blogId);
 
         data.editor = true;
         data.title = `Edit Post ${BASE_TITLE}`;
         break;
       case undefined:
+        const { pageNum = null } = ctx.query as AdminBlogPostQueryParameters;
+
+        if (!pageNum) {
+        }
+
         data.title = `Posts ${BASE_TITLE}`;
 
         data.posts = [...this.blogCache.values()]
