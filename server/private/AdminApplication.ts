@@ -30,14 +30,12 @@ class AdminApplication {
     let header = '';
 
     for (const [src, directives] of entries) {
-      const preppedDirectives = directives
-        .map(directive =>
-          is_url(directive) || directive.startsWith('.*')
-            ? directive
-            : `'${directive}'`
-        )
-        .join(' ');
-      const directiveRule = `${src} ${preppedDirectives}`;
+      const preppedDirectives = directives.map(directive =>
+        is_url(directive) || directive.startsWith('.*')
+          ? directive
+          : `'${directive}'`
+      );
+      const directiveRule = `${src} ${preppedDirectives.join(' ')}`;
 
       header += header === '' ? `${directiveRule}` : `; ${directiveRule}`;
     }
@@ -74,7 +72,7 @@ class AdminApplication {
           log('Views:', ctx.session.views);
         }
 
-        log(`${ctx.method} ${ctx.url} (${ctx.status}) - ${xResponseTime}ms`);
+        log(`${ctx.method} ${ctx.path} (${ctx.status}) - ${xResponseTime}ms`);
       })
       .use(AdminRouter.middleware.routes())
       .use(AdminRouter.middleware.allowedMethods())

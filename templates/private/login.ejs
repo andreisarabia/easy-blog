@@ -1,22 +1,44 @@
+<link rel="stylesheet" href="css/login.css" />
+
 <section id="admin-login">
   <h2>Login</h2>
-  <% if (errors.length > 0) { %> <% for (const error of errors) { %>
-  <h3 style="color: red;"><%= error %></h3>
-  <% } %> <% } %>
+  <h2>Register</h2>
+
   <form action="login" method="POST">
+    <% if (errors.length > 0) { %> <% for (const error of errors) { %>
+    <h3 style="color: red;"><%= error %></h3>
+    <% } %> <% } %>
     <input type="hidden" name="_csrf" value="<%= csrf %>" />
-    <input type="text" name="username" />
-    <input type="password" name="password" id="" />
+    <label for="login-username">Username</label>
+    <input type="text" name="username" id="login-username" required />
+    <label for="login-password">Password</label>
+    <input type="password" name="password" id="login-password" required />
     <button type="submit">Login</button>
   </form>
-  <h2>Register</h2>
+
   <form action="register" method="POST">
     <input type="hidden" name="_csrf" value="<%= csrf %>" />
-    <input type="text" name="username" minlength="5" required />
-    <input type="email" name="email" maxlength="256" required />
+    <label for="register-username">Username</label>
+    <input
+      type="text"
+      name="username"
+      id="register-username"
+      minlength="5"
+      required
+    />
+    <label for="register-email">Email</label>
+    <input
+      type="email"
+      name="email"
+      id="register-email"
+      maxlength="256"
+      required
+    />
+    <label for="register-password">Password</label>
     <input
       type="password"
       name="password"
+      id="register-password"
       minlength="13"
       maxlength="55"
       required

@@ -37,6 +37,7 @@ class AdminRouter extends Router {
       .get('logout', ctx => this.logout_user(ctx))
       .post('login', ctx => this.login_user(ctx))
       .post('register', ctx => this.register_user(ctx))
+      .post('reset-templates', ctx => this.refresh_templates(ctx))
       .use(async (ctx, next) => {
         if (!this.is_logged_in(ctx)) return ctx.redirect('login');
 
@@ -44,7 +45,6 @@ class AdminRouter extends Router {
       })
       .get('home', ctx => this.send_home_page(ctx))
       .get('posts', ctx => this.send_posts_page(ctx))
-      .post('reset-templates', ctx => this.refresh_templates(ctx))
       .use(AdminAPIRouter.middleware.routes())
       .use(AdminAPIRouter.middleware.allowedMethods());
 
@@ -132,11 +132,11 @@ class AdminRouter extends Router {
 
   private async send_posts_page(ctx: Koa.ParameterizedContext): Promise<void> {
     const { action } = ctx.query as AdminBlogPostQueryParameters;
-    const data: AdminBlogPostActionData = {
+    const data = {
       title: '',
       posts: null,
       editor: false
-    };
+    } as AdminBlogPostActionData;
 
     switch (action) {
       case 'new':

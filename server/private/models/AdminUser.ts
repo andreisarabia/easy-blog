@@ -170,7 +170,7 @@ export default class AdminUser extends Model {
     try {
       const searchedAdminUser = await AdminUser.find(username);
       return Boolean(searchedAdminUser.username && searchedAdminUser.email);
-    } catch (error) {
+    } catch {
       return false;
     }
   }

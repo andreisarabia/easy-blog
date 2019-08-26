@@ -1,0 +1,28 @@
+h1,
+h2 {
+  margin: 0;
+}
+
+section#admin-login h2 {
+  text-decoration: underline blueviolet;
+}
+
+section#admin-login {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  text-align: center;
+  margin: 4rem;
+  padding: 4rem;
+}
+
+section#admin-login > form {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin: 2rem;
+}
+
+section#admin-login > form > input {
+  margin-top: 0.3rem;
+  margin-bottom: 1rem;
+}
