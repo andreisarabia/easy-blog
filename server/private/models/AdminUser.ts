@@ -8,6 +8,7 @@ const MIN_USERNAME_LENGTH = 5;
 const MAX_USERNAME_LENGTH = 35;
 const MIN_PASSWORD_LENGTH = 13;
 const MAX_PASSWORD_LENGTH = 55;
+const COLLECTION_NAME = 'admin_users';
 
 export type AdminUserParameters = {
   username: string;
@@ -29,7 +30,7 @@ export default class AdminUser extends Model {
     return this.props.password;
   }
 
-  private get username(): string {
+  public get username(): string {
     return this.props.username;
   }
 
@@ -42,7 +43,7 @@ export default class AdminUser extends Model {
   }
 
   private static get collectionName(): string {
-    return 'admin_users';
+    return COLLECTION_NAME;
   }
 
   public async save(): Promise<AdminUser> {
@@ -58,11 +59,11 @@ export default class AdminUser extends Model {
   }
 
   public static async find(username: string): Promise<AdminUser> {
-    const doc = (await Model.find(
-      AdminUser.collectionName,
-      { username },
-      1
-    )) as AdminUserParameters;
+    const doc = (await Model.search({
+      collection: AdminUser.collectionName,
+      criteria: { username },
+      limit: 1
+    })) as AdminUserParameters;
 
     return doc ? new AdminUser(doc) : null;
   }
@@ -75,20 +76,9 @@ export default class AdminUser extends Model {
       return [Error('Either a username or password were not submitted.'), null];
     }
 
-    const searchedAdminUser = await AdminUser.find(username);
+    const [err, user] = await AdminUser.login(username, password);
 
-    if (!searchedAdminUser || !searchedAdminUser.username) {
-      return [Error('User and password combination do not exist.'), null];
-    }
-
-    const isMatchingPassword = await bcrypt.compare(
-      password,
-      searchedAdminUser.password
-    );
-
-    return isMatchingPassword
-      ? [null, searchedAdminUser]
-      : [Error('User and password combination do not exist.'), null];
+    return err ? [err, null] : [null, user];
   }
 
   public static async register({
@@ -122,9 +112,9 @@ export default class AdminUser extends Model {
     password: string,
     email: string
   ): Promise<string[]> {
-    if (await AdminUser.exists(username)) return ['Username is not valid.'];
-
     const errors = [];
+
+    if (await AdminUser.exists(username)) errors.push('Username is not valid.');
 
     if (username.length > MAX_USERNAME_LENGTH) {
       errors.push(
@@ -157,11 +147,30 @@ export default class AdminUser extends Model {
     return errors;
   }
 
+  private static async login(
+    username: string,
+    password: string
+  ): Promise<[Error, AdminUser]> {
+    try {
+      const user = await AdminUser.find(username);
+      const isMatchingPassword = await bcrypt.compare(
+        password,
+        user ? user.password : ''
+      );
+
+      return isMatchingPassword
+        ? [null, user]
+        : [Error('User and password combination do not exist.'), null];
+    } catch (error) {
+      return [error, null];
+    }
+  }
+
   private static async exists(username: string): Promise<boolean> {
     try {
       const searchedAdminUser = await AdminUser.find(username);
       return Boolean(searchedAdminUser.username && searchedAdminUser.email);
-    } catch (error) {
+    } catch {
       return false;
     }
   }

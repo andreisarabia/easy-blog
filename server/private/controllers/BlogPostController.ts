@@ -1,17 +1,6 @@
 import Controller from './Controller';
-import BlogPost from '../models/BlogPost';
+import BlogPost, { BlogPostParameters } from '../models/BlogPost';
 import Database from '../../src/Database';
-
-const databaseCollection = 'blog_posts';
-
-type BlogPostParameters = {
-  title: string;
-  author: string;
-  timestamp: Date;
-  htmlContent: string;
-  quillData?: object;
-  _id?: string;
-};
 
 class BlogPostController extends Controller {
   constructor() {

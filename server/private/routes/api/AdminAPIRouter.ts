@@ -1,17 +1,10 @@
 import Koa from 'koa';
 import Router from '../../../src/Router';
 import AdminUser from '../../models/AdminUser';
-import BlogPost from '../../models/BlogPost';
+import BlogPost, { BlogPostParameters } from '../../models/BlogPost';
 import BlogPostController from '../../controllers/BlogPostController';
 
 const log = console.log;
-
-type BlogPostParameters = {
-  title: string;
-  authorName: string;
-  htmlContent: string;
-  rawQuillData: object;
-};
 
 type AdminBlogPostQueryParameters = {
   action: '';
@@ -35,13 +28,13 @@ class AdminAPIRouter extends Router {
   }
 
   private async create_post(ctx: Koa.ParameterizedContext): Promise<void> {
-    const { title, authorName, htmlContent, rawQuillData } = ctx.request
+    const { title, author, htmlContent, quillData } = ctx.request
       .body as BlogPostParameters;
     const blogPost = await new BlogPost({
       title,
-      author: authorName,
+      author,
       htmlContent,
-      quillData: rawQuillData,
+      quillData,
       timestamp: new Date()
     }).save();
 

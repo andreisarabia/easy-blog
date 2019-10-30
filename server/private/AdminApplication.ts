@@ -24,28 +24,27 @@ class AdminApplication {
     return this.app;
   }
 
-  private get cspString(): string {
-    return Object.entries(this.contentSecurityPolicy).reduce(
-      (cspString, [src, directives]) => {
-        const preppedDirectives = directives
-          .map(directive =>
-            is_url(directive) || directive.startsWith('.*')
-              ? directive
-              : `'${directive}'`
-          )
-          .join(' ');
-        const directiveRule = `${src} ${preppedDirectives}`;
+  private get cspHeader(): string {
+    const entries = Object.entries(this.contentSecurityPolicy);
 
-        return cspString
-          ? `${cspString}; ${directiveRule}`
-          : `${directiveRule}`;
-      },
-      ''
-    );
+    let header = '';
+
+    for (const [src, directives] of entries) {
+      const preppedDirectives = directives.map(directive =>
+        is_url(directive) || directive.startsWith('.*')
+          ? directive
+          : `'${directive}'`
+      );
+      const directiveRule = `${src} ${preppedDirectives.join(' ')}`;
+
+      header += header === '' ? `${directiveRule}` : `; ${directiveRule}`;
+    }
+
+    return header;
   }
 
   private setup_middlewares(): void {
-    const cspDirectives = this.cspString;
+    const cspHeader: string = this.cspHeader;
 
     this.app.keys = ['easy-blog-admin'];
 
@@ -58,7 +57,8 @@ class AdminApplication {
           'X-Content-Type-Options': 'nosniff',
           'X-Frame-Options': 'deny',
           'X-XSS-Protection': '1; mode=block',
-          'Content-Security-Policy': cspDirectives
+          'Content-Security-Policy': cspHeader,
+          'Cache-Control': 'no-cache'
         });
 
         await next();
@@ -72,7 +72,7 @@ class AdminApplication {
           log('Views:', ctx.session.views);
         }
 
-        log(`${ctx.method} ${ctx.url} (${ctx.status}) - ${xResponseTime}ms`);
+        log(`${ctx.method} ${ctx.path} (${ctx.status}) - ${xResponseTime}ms`);
       })
       .use(AdminRouter.middleware.routes())
       .use(AdminRouter.middleware.allowedMethods())
