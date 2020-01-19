@@ -3,16 +3,10 @@ import { resolve } from 'path';
 
 const array_unique = (arr: any[]): any[] => [...new Set(arr)];
 
-const file_path_from_base = (filePath: string, cutoff: string): string =>
-  filePath.substring(
-    filePath.indexOf(cutoff) + cutoff.length + 1,
-    filePath.length
-  );
-
-const is_url = (url: any) => {
+const is_url = (url: string) => {
   try {
     return Boolean(new URL(url));
-  } catch (error) {
+  } catch {
     return false;
   }
 };
@@ -31,4 +25,4 @@ async function* read_dir_recursively(
   }
 }
 
-export { array_unique, is_url, file_path_from_base, read_dir_recursively };
+export { array_unique, is_url, read_dir_recursively };
