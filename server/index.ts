@@ -7,7 +7,7 @@ import koaBody from 'koa-body';
 import AdminApplication from './private/AdminApplication';
 import UserApplication from './public/UserApplication';
 
-const main = async () => {
+const main = () => {
   const app = new Koa();
   const appPort: number = +process.env.PORT || 3000;
   const sessionConfig = {
@@ -28,4 +28,4 @@ const main = async () => {
     .listen(appPort, () => console.log('Listening...'));
 };
 
-main().catch(console.error);
+main();

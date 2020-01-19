@@ -1,13 +1,14 @@
 import Koa from 'koa';
 import koaStatic from 'koa-static';
+import Application, { ContentSecurityPolicy } from '../src/Application';
 import { is_url } from '../util/fns';
 
 const PUBLIC_ASSETS_PATH = 'templates/public/assets';
 const log = console.log;
 
-class UserApplication {
-  private app = new Koa();
-  private readonly contentSecurityPolicy = {
+class UserApplication extends Application {
+  protected app = new Koa();
+  protected csp: ContentSecurityPolicy = {
     'default-src': ['self'],
     'script-src': ['self', 'unsafe-inline'],
     'style-src': ['self', 'unsafe-inline'],
@@ -15,28 +16,17 @@ class UserApplication {
   };
 
   constructor() {
+    super();
     this.setup_middlewares();
   }
 
-  public get middleware() {
-    return this.app;
-  }
-
-  private setup_middlewares(): void {
-    const cspDirectives: string = Object.entries(
-      this.contentSecurityPolicy
-    ).reduce((cspString, [src, directives]) => {
-      const preppedDirectives = directives
-        .map(directive =>
-          is_url(directive) || directive.startsWith('.*')
-            ? directive
-            : `'${directive}'`
-        )
-        .join(' ');
-      const directiveRule = `${src} ${preppedDirectives}`;
-
-      return cspString ? `${cspString}; ${directiveRule}` : `${directiveRule}`;
-    }, '');
+  protected setup_middlewares(): void {
+    const defaultHeaders = {
+      'X-Content-Type-Options': 'nosniff',
+      'X-Frame-Options': 'deny',
+      'X-XSS-Protection': '1; mode=block',
+      'Content-Security-Policy': super.cspHeader
+    };
 
     this.app.keys = ['easy-blog-visitor'];
 
@@ -44,12 +34,7 @@ class UserApplication {
       .use(async (ctx, next) => {
         const start = Date.now();
 
-        ctx.set({
-          'X-Content-Type-Options': 'nosniff',
-          'X-Frame-Options': 'deny',
-          'X-XSS-Protection': '1; mode=block',
-          'Content-Security-Policy': cspDirectives
-        });
+        ctx.set(defaultHeaders);
 
         await next();
 
