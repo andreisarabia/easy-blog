@@ -45,12 +45,13 @@ export default class Database {
     try {
       const collection = await this.dbCollection;
 
-      const result:
-        | InsertWriteOpResult
-        | InsertOneWriteOpResult
-        | any = Array.isArray(dataObjs)
-        ? await collection.insertMany(dataObjs as any[])
-        : await collection.insertOne(dataObjs);
+      let result: InsertWriteOpResult<any> | InsertOneWriteOpResult<any> | any;
+
+      if (Array.isArray(dataObjs)) {
+        result = await collection.insertMany(dataObjs as any[]);
+      } else {
+        result = await collection.insertOne(dataObjs);
+      }
 
       const resultToReturn: QueryResults = { ops: result.ops };
 
